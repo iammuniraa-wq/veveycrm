@@ -72,6 +72,16 @@ export type Quote = {
   created_at: string;
   valid_until: string | null;
   notes: string | null;
+  revision: number;
+};
+
+// One row per revision of a quote — tracks what changed between versions.
+export type QuoteRevision = {
+  id: string;
+  quote_id: string;
+  rev: number;
+  date: string;
+  description: string;
 };
 
 export type QuoteLine = {

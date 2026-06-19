@@ -65,6 +65,26 @@ export default async function QuotationDetailPage({
           ← All quotations
         </Link>
         <Pill label={QUOTE_STATUS_LABEL[quote.status]} tone={statusTone[quote.status]} />
+        <Link
+          href={ROUTES.quotationPrint(id)}
+          target="_blank"
+          rel="noopener"
+          style={{
+            marginLeft: "auto",
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 6,
+            background: c.accent,
+            color: "#fff",
+            borderRadius: 7,
+            padding: "6px 14px",
+            fontSize: 12.5,
+            fontWeight: 500,
+            textDecoration: "none",
+          }}
+        >
+          ↓ Download PDF
+        </Link>
         {quote.status === "approved" && workOrders.length > 0 && (
           <span style={{ fontSize: 12, color: c.muted }}>
             · Work order raised:{" "}

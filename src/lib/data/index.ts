@@ -104,12 +104,16 @@ export async function getQuote(id: string) {
 
   const account = seed.accounts.find((a) => a.id === quote.account_id) ?? null;
   const contact = seed.contacts.find((c) => c.account_id === quote.account_id) ?? null;
+  const site = seed.sites.find((s) => s.account_id === quote.account_id) ?? null;
   const lines = seed.quoteLines.filter((l) => l.quote_id === id);
+  const revisions = seed.quoteRevisions
+    .filter((r) => r.quote_id === id)
+    .sort((a, b) => a.rev - b.rev);
   const workOrders = seed.workOrders.filter(
     (wo) => wo.authorized_by.kind === "quote" && wo.authorized_by.id === id
   );
 
-  return { quote, account, contact, lines, workOrders };
+  return { quote, account, contact, site, lines, revisions, workOrders };
 }
 
 export const QUOTE_STATUS_LABEL: Record<Quote["status"], string> = {

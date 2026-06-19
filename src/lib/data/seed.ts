@@ -3,7 +3,7 @@
 // Stable string ids keep cross-references readable.
 
 import type {
-  Account, Contact, Site, Asset, Contract, Lead, Quote, QuoteLine,
+  Account, Contact, Site, Asset, Contract, Lead, Quote, QuoteLine, QuoteRevision,
   WorkOrder, Invoice, Technician, Activity,
 } from "@/lib/types";
 
@@ -66,9 +66,19 @@ export const leads: Lead[] = [
 ];
 
 export const quotes: Quote[] = [
-  { id: "qt_krishna", account_id: "acc_krishna", ref: "QT-2026-0148", status: "approved", total: 86500,  created_at: "2026-06-11", valid_until: "2026-07-11", notes: "Price includes pickup and delivery within Hosapete. Additional copper surcharge may apply if current copper rate exceeds ₹750/kg." },
-  { id: "qt_hpsteel", account_id: "acc_hpsteel", ref: "QT-2026-0152", status: "sent",     total: 142000, created_at: "2026-06-15", valid_until: "2026-07-15", notes: "Rotor balancing to IS 11723 standard. HV testing certificate provided on completion." },
-  { id: "qt_bharat",  account_id: "acc_bharat",  ref: "QT-2026-0155", status: "draft",    total: 48500,  created_at: "2026-06-17", valid_until: "2026-07-17", notes: null },
+  { id: "qt_krishna", account_id: "acc_krishna", ref: "QT-2026-0148", status: "approved", total: 86500,  created_at: "2026-06-11", valid_until: "2026-07-11", revision: 2, notes: "Price includes pickup and delivery within Hosapete. Additional copper surcharge may apply if current copper rate exceeds ₹750/kg. Payment: 50% advance, balance on delivery." },
+  { id: "qt_hpsteel", account_id: "acc_hpsteel", ref: "QT-2026-0152", status: "sent",     total: 142000, created_at: "2026-06-15", valid_until: "2026-07-15", revision: 1, notes: "Rotor balancing to IS 11723 G2.5 standard. HV withstand test certificate provided on completion. Payment: 40% advance, 60% against delivery." },
+  { id: "qt_bharat",  account_id: "acc_bharat",  ref: "QT-2026-0155", status: "draft",    total: 48500,  created_at: "2026-06-17", valid_until: "2026-07-17", revision: 1, notes: null },
+];
+
+export const quoteRevisions: QuoteRevision[] = [
+  // QT-2026-0148 — Krishna Textiles — 2 revisions
+  { id: "qr_k1", quote_id: "qt_krishna", rev: 1, date: "2026-06-11", description: "Initial quotation issued. Transport cost estimated at ₹12,000." },
+  { id: "qr_k2", quote_id: "qt_krishna", rev: 2, date: "2026-06-13", description: "Bearing upgraded from generic to SKF/FAG premium grade. Transport revised to ₹15,000 on account of fuel surcharge. Copper rate note added to terms." },
+  // QT-2026-0152 — Hosapete Steel — 1 revision
+  { id: "qr_h1", quote_id: "qt_hpsteel", rev: 1, date: "2026-06-15", description: "Initial quotation issued." },
+  // QT-2026-0155 — Bharat Forge — 1 revision
+  { id: "qr_b1", quote_id: "qt_bharat",  rev: 1, date: "2026-06-17", description: "Initial draft prepared after site inspection." },
 ];
 
 export const quoteLines: QuoteLine[] = [

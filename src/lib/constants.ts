@@ -11,6 +11,7 @@ export const ROUTES = {
   partners: "/partners",
   quotations: "/quotations",
   quotation: (id: string) => `/quotations/${id}`,
+  quotationPrint: (id: string) => `/quotations/${id}/print`,
   cases: "/cases",
   amc: "/amc",
   workOrders: "/work-orders",
@@ -81,3 +82,15 @@ export const NAV: NavGroup[] = [
 
 export const MOBILE_BREAKPOINT = 780;
 export const WORKSPACE_NAME = "Vikas Pioneers workspace";
+
+// Company details — used in PDF headers and footers.
+export const COMPANY = {
+  name: "Vikas Pioneers India Pvt Ltd",
+  shortName: "Vikas Pioneers",
+  tagline: "Authorised Service Centre — Crompton Greaves · Marathon Electric · Rotomotive",
+  address: "Industrial Area, Hosapete — 583 201, Karnataka, India",
+  phone: "+91 8394 220 145",
+  email: "service@vikaspioneers.com",
+  gstin: "29AABCV1234K1ZX",
+  pan: "AABCV1234K",
+} as const;
