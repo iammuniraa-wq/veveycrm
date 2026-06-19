@@ -7,6 +7,7 @@ import type { PillarKey } from "@/lib/theme";
 import { cardStyle } from "@/components/Shell";
 import PageHeader from "@/components/PageHeader";
 import Pill from "@/components/Pill";
+import ComingSoon from "@/components/ComingSoon";
 import { ROUTES } from "@/lib/constants";
 
 const statusTone: Record<Quote["status"], PillarKey> = {
@@ -60,37 +61,37 @@ export default async function QuotationDetailPage({
         subtitle={`Sales · Quotation · ${account?.name ?? ""}`}
       />
 
-      <div style={{ marginBottom: 14, display: "flex", alignItems: "center", gap: 10 }}>
-        <Link href={ROUTES.quotations} style={{ fontSize: 12, color: c.muted }}>
+      <div style={{ marginBottom: 14, display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+        <Link href={ROUTES.quotations} style={{ fontSize: 12, color: c.muted, textDecoration: "none" }}>
           ← All quotations
         </Link>
         <Pill label={QUOTE_STATUS_LABEL[quote.status]} tone={statusTone[quote.status]} />
-        <Link
-          href={ROUTES.quotationPrint(id)}
-          target="_blank"
-          rel="noopener"
-          style={{
-            marginLeft: "auto",
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 6,
-            background: c.accent,
-            color: "#fff",
-            borderRadius: 7,
-            padding: "6px 14px",
-            fontSize: 12.5,
-            fontWeight: 500,
-            textDecoration: "none",
-          }}
-        >
-          ↓ Download PDF
-        </Link>
         {quote.status === "approved" && workOrders.length > 0 && (
           <span style={{ fontSize: 12, color: c.muted }}>
-            · Work order raised:{" "}
-            <span style={{ fontWeight: 600, color: c.ink }}>{workOrders[0].ref}</span>
+            · WO: <span style={{ fontWeight: 600, color: c.ink }}>{workOrders[0].ref}</span>
           </span>
         )}
+
+        {/* Action bar */}
+        <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+          {/* Email — Coming Soon */}
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "#f4f6f9", color: c.hint, borderRadius: 7, padding: "6px 12px", fontSize: 12.5, fontWeight: 500, cursor: "not-allowed" }}>
+            📧 Email quote <ComingSoon size="xs" />
+          </span>
+          {/* WhatsApp — Coming Soon */}
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "#f0faf5", color: "#3d7a5a", borderRadius: 7, padding: "6px 12px", fontSize: 12.5, fontWeight: 500, cursor: "not-allowed" }}>
+            💬 WhatsApp <ComingSoon size="xs" />
+          </span>
+          {/* PDF — works */}
+          <Link
+            href={ROUTES.quotationPrint(id)}
+            target="_blank"
+            rel="noopener"
+            style={{ display: "inline-flex", alignItems: "center", gap: 6, background: c.accent, color: "#fff", borderRadius: 7, padding: "6px 14px", fontSize: 12.5, fontWeight: 500, textDecoration: "none" }}
+          >
+            ↓ Download PDF
+          </Link>
+        </div>
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) 260px", gap: 12 }} className="hub-grid">

@@ -4,8 +4,9 @@ import ThemeApplier from "@/components/ThemeApplier";
 
 export const metadata: Metadata = {
   title: "VeveyCRM — Vikas Pioneers workspace",
-  description:
-    "CRM + Field Service for electromechanical repair & service businesses.",
+  description: "CRM + Field Service for electromechanical repair & service businesses.",
+  manifest: "/manifest.json",
+  appleWebApp: { capable: true, statusBarStyle: "black-translucent", title: "VeveyCRM" },
 };
 
 export default function RootLayout({

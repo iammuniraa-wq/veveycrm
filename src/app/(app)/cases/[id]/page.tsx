@@ -7,6 +7,7 @@ import type { PillarKey } from "@/lib/theme";
 import { cardStyle } from "@/components/Shell";
 import PageHeader from "@/components/PageHeader";
 import Pill from "@/components/Pill";
+import ComingSoon from "@/components/ComingSoon";
 import { ROUTES } from "@/lib/constants";
 
 // ── Stage timeline config ─────────────────────────────────────────────────────
@@ -111,17 +112,42 @@ export default async function CaseDetailPage({
       />
 
       {/* Back + badges row */}
-      <div style={{ marginBottom: 14, display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-        <Link href={ROUTES.cases} style={{ fontSize: 12, color: c.muted }}>
+      <div style={{ marginBottom: 10, display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+        <Link href={ROUTES.cases} style={{ fontSize: 12, color: c.muted, textDecoration: "none" }}>
           ← All cases
         </Link>
         <Pill label={CASE_STATUS_LABEL[sc.status]} tone={statusTone[sc.status]} />
         <Pill label={CASE_TYPE_LABEL[sc.type]} tone={typeTone[sc.type]} />
-        {sc.has_loaner && (
-          <Pill label="Loaner out" tone="purple" />
-        )}
+        {sc.has_loaner && <Pill label="Loaner out" tone="purple" />}
         {sc.disposition === "buyback" && <Pill label="Buyback" tone="purple" />}
         {sc.disposition === "scrap"   && <Pill label="Scrapped" tone="red" />}
+      </div>
+
+      {/* Action bar */}
+      <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 14 }}>
+        {quote && (
+          <Link
+            href={ROUTES.quotation(quote.id)}
+            style={{ display: "inline-flex", alignItems: "center", gap: 6, background: c.accent, color: "#fff", borderRadius: 7, padding: "6px 14px", fontSize: 12.5, fontWeight: 500, textDecoration: "none" }}
+          >
+            ₹ View quotation
+          </Link>
+        )}
+        {quote && (
+          <Link
+            href={ROUTES.quotationPrint(quote.id)}
+            target="_blank"
+            style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "#e6f1fb", color: "#0c447c", borderRadius: 7, padding: "6px 14px", fontSize: 12.5, fontWeight: 500, textDecoration: "none" }}
+          >
+            ↓ Download PDF
+          </Link>
+        )}
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "#f4f6f9", color: c.hint, borderRadius: 7, padding: "6px 12px", fontSize: 12.5, fontWeight: 500, cursor: "not-allowed" }}>
+          📧 Email report <ComingSoon size="xs" />
+        </span>
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "#f0faf5", color: "#3d7a5a", borderRadius: 7, padding: "6px 12px", fontSize: 12.5, fontWeight: 500, cursor: "not-allowed" }}>
+          💬 WhatsApp contact <ComingSoon size="xs" />
+        </span>
       </div>
 
       {/* Stage timeline */}

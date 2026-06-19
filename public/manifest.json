@@ -1,0 +1,31 @@
+{
+  "name": "VeveyCRM — Vikas Pioneers",
+  "short_name": "VeveyCRM",
+  "description": "CRM + Field Service for electromechanical repair and service businesses",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0e1a28",
+  "theme_color": "#378ADD",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["business", "productivity"],
+  "shortcuts": [
+    { "name": "Dashboard",   "url": "/",          "description": "Open dashboard" },
+    { "name": "Cases",       "url": "/cases",      "description": "View service cases" },
+    { "name": "Accounts",    "url": "/accounts",   "description": "View accounts" },
+    { "name": "Quotations",  "url": "/quotations", "description": "View quotations" }
+  ]
+}

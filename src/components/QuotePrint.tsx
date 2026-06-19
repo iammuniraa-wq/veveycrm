@@ -44,21 +44,35 @@ export default function QuotePrint({ quote, account, contact, site, lines, revis
       `}</style>
 
       {/* ── Screen-only toolbar ─────────────────────────────── */}
-      <div className="no-print" style={{ background: brand.dark, padding: "10px 24px", display: "flex", alignItems: "center", gap: 12, position: "sticky", top: 0, zIndex: 10 }}>
+      <div className="no-print" style={{ background: brand.dark, padding: "10px 24px", display: "flex", alignItems: "center", gap: 10, position: "sticky", top: 0, zIndex: 10, flexWrap: "wrap" }}>
         <button
           onClick={() => window.print()}
           style={{ background: brand.blue, color: "#fff", border: "none", borderRadius: 8, padding: "8px 20px", fontSize: 13, fontWeight: 500, cursor: "pointer" }}
         >
-          Print / Save PDF
+          ↓ Print / Save PDF
         </button>
+        {/* Email — Coming Soon */}
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "rgba(255,255,255,.07)", color: "#6b8099", border: "1px solid rgba(255,255,255,.12)", borderRadius: 8, padding: "7px 14px", fontSize: 12.5, fontWeight: 500, cursor: "not-allowed" }}>
+          📧 Email quote
+          <span style={{ fontSize: 9, fontWeight: 700, color: "#f6b23c", background: "rgba(246,178,60,.15)", border: "1px solid rgba(246,178,60,.3)", borderRadius: 5, padding: "1px 5px", letterSpacing: 0.4 }}>
+            SOON
+          </span>
+        </span>
+        {/* WhatsApp — Coming Soon */}
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "rgba(255,255,255,.07)", color: "#6b8099", border: "1px solid rgba(255,255,255,.12)", borderRadius: 8, padding: "7px 14px", fontSize: 12.5, fontWeight: 500, cursor: "not-allowed" }}>
+          💬 WhatsApp
+          <span style={{ fontSize: 9, fontWeight: 700, color: "#f6b23c", background: "rgba(246,178,60,.15)", border: "1px solid rgba(246,178,60,.3)", borderRadius: 5, padding: "1px 5px", letterSpacing: 0.4 }}>
+            SOON
+          </span>
+        </span>
         <button
           onClick={() => window.close()}
           style={{ background: "transparent", color: "#aebccd", border: "1px solid rgba(255,255,255,.2)", borderRadius: 8, padding: "8px 16px", fontSize: 13, cursor: "pointer" }}
         >
           Close
         </button>
-        <span style={{ marginLeft: "auto", color: "#8aa0b8", fontSize: 12 }}>
-          Use browser's "Save as PDF" destination when printing
+        <span style={{ marginLeft: "auto", color: "#4a6278", fontSize: 11 }}>
+          Save as PDF · use browser print dialog
         </span>
       </div>
 
