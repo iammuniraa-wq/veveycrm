@@ -4,7 +4,7 @@
 
 import type {
   Account, Contact, Site, Asset, Contract, Lead, Quote, QuoteLine, QuoteRevision,
-  WorkOrder, Invoice, Technician, Activity,
+  WorkOrder, Invoice, Technician, Activity, ServiceCase, CasePhoto, InspectionReport,
 } from "@/lib/types";
 
 export const technicians: Technician[] = [
@@ -125,4 +125,109 @@ export const activities: Activity[] = [
   { id: "act_5", account_id: "acc_sahyadri", pillar: "field",     text: "WO-2026-0298 completed by Suresh — oil within limits", at: "2026-06-12T15:40:00" },
   { id: "act_6", account_id: "acc_sahyadri", pillar: "finance",   text: "Invoice INV-2026-0211 raised to Crompton (AMC)",       at: "2026-06-13T09:10:00" },
   { id: "act_7", account_id: "acc_bharat",   pillar: "marketing", text: "Referral from Marathon — hammer motor bearings",       at: "2026-06-16T13:00:00" },
+];
+
+// ── Cases ────────────────────────────────────────────────────────────────────
+
+export const serviceCases: ServiceCase[] = [
+  {
+    id: "case_krishna",
+    account_id: "acc_krishna",
+    ref: "CS-2026-0089",
+    type: "direct",
+    status: "in_repair",
+    asset_id: "ast_krishna_m1",
+    equipment_label: "Crompton 75 kW 3-Ph IM · CG-75-2291",
+    complaint: "Stator winding burnt — complete failure. Motor tripped on OLR and refuses to restart. Heavy burning smell from enclosure.",
+    assigned_to: "tech_ramesh",
+    intake_at: "2026-06-10T08:30:00",
+    closed_at: null,
+    quote_id: "qt_krishna",
+    contract_id: null,
+    has_loaner: false,
+    disposition: "repair",
+    notes: "Customer needs motor back by 25 Jun — spinning line B is down. Priority job.",
+  },
+  {
+    id: "case_hpsteel",
+    account_id: "acc_hpsteel",
+    ref: "CS-2026-0092",
+    type: "direct",
+    status: "report_sent",
+    asset_id: "ast_hpsteel_m1",
+    equipment_label: "Marathon 250 kW 3-Ph IM · HP-250-3320",
+    complaint: "Excessive vibration and noise at full load. Bearing temperature alarm on DE side. Rolling mill running at reduced speed.",
+    assigned_to: "tech_suresh",
+    intake_at: "2026-06-14T10:15:00",
+    closed_at: null,
+    quote_id: "qt_hpsteel",
+    contract_id: null,
+    has_loaner: false,
+    disposition: null,
+    notes: "HV motor — handle with care. 690V class. Ensure HV test cert on completion.",
+  },
+  {
+    id: "case_bharat",
+    account_id: "acc_bharat",
+    ref: "CS-2026-0095",
+    type: "amc",
+    status: "intake",
+    asset_id: "ast_bharat_m1",
+    equipment_label: "Marathon 160 kW 3-Ph IM · MR-160-7741",
+    complaint: "Bearing noise — DE side. Grease leaking from end-shield. Intermittent vibration trip.",
+    assigned_to: "tech_anil",
+    intake_at: "2026-06-17T14:00:00",
+    closed_at: null,
+    quote_id: null,
+    contract_id: "ctr_marathon",
+    has_loaner: true,
+    disposition: null,
+    notes: "AMC case under Marathon contract AMC-MR-2026-02. Loaner motor (45 kW) dispatched to Bharat Forge Pune while this unit is in workshop.",
+  },
+];
+
+export const casePhotos: CasePhoto[] = [
+  // CS-2026-0089 — Krishna Textiles — intake
+  { id: "ph_k_i1", case_id: "case_krishna", stage: "intake", caption: "Gate receipt — motor on trolley, nameplate visible", taken_at: "2026-06-10T08:35:00" },
+  { id: "ph_k_i2", case_id: "case_krishna", stage: "intake", caption: "Burnt terminal box — visible carbon deposits on leads", taken_at: "2026-06-10T08:37:00" },
+  { id: "ph_k_i3", case_id: "case_krishna", stage: "intake", caption: "DE bearing end — grease discolouration noted", taken_at: "2026-06-10T08:39:00" },
+  // CS-2026-0089 — inspection
+  { id: "ph_k_s1", case_id: "case_krishna", stage: "inspection", caption: "Stator after stripping — Phase U winding completely burnt, carbon on slots", taken_at: "2026-06-11T10:20:00" },
+  { id: "ph_k_s2", case_id: "case_krishna", stage: "inspection", caption: "Rotor surface — no mechanical damage, shaft runout within tolerance", taken_at: "2026-06-11T10:28:00" },
+  { id: "ph_k_s3", case_id: "case_krishna", stage: "inspection", caption: "DE bearing removed — inner race pitting confirmed", taken_at: "2026-06-11T10:35:00" },
+
+  // CS-2026-0092 — Hosapete Steel — intake
+  { id: "ph_h_i1", case_id: "case_hpsteel", stage: "intake", caption: "Motor at gate — transport cradle intact, nameplate photographed", taken_at: "2026-06-14T10:20:00" },
+  { id: "ph_h_i2", case_id: "case_hpsteel", stage: "intake", caption: "DE bearing housing — visible oil leak at labyrinth seal", taken_at: "2026-06-14T10:24:00" },
+  // CS-2026-0092 — inspection
+  { id: "ph_h_s1", case_id: "case_hpsteel", stage: "inspection", caption: "DE bearing removed — heavy pitting on outer race, cage deformed", taken_at: "2026-06-15T09:10:00" },
+  { id: "ph_h_s2", case_id: "case_hpsteel", stage: "inspection", caption: "Rotor — dynamic balance check setup, unbalance reading 12 g·mm (limit: 4 g·mm)", taken_at: "2026-06-15T11:00:00" },
+  { id: "ph_h_s3", case_id: "case_hpsteel", stage: "inspection", caption: "Winding insulation resistance — Phase R: 42 MΩ, Phase Y: 38 MΩ, Phase B: 41 MΩ (acceptable)", taken_at: "2026-06-15T14:15:00" },
+
+  // CS-2026-0095 — Bharat Forge — intake only
+  { id: "ph_b_i1", case_id: "case_bharat", stage: "intake", caption: "Motor received from Bharat Forge Pune — logistics partner delivery", taken_at: "2026-06-17T14:05:00" },
+  { id: "ph_b_i2", case_id: "case_bharat", stage: "intake", caption: "DE end-shield — grease leakage and discolouration around labyrinth seal", taken_at: "2026-06-17T14:10:00" },
+];
+
+export const inspectionReports: InspectionReport[] = [
+  {
+    id: "ir_krishna",
+    case_id: "case_krishna",
+    findings: "Phase U stator winding is completely burnt due to sustained single-phasing — all three phases affected on stator slots 1–18. Insulation degraded to Class E (original Class F). DE bearing (6315) shows inner-race pitting; NDE bearing serviceable. Rotor in good condition — no mechanical damage, shaft runout 0.02 mm (within tolerance). Terminal box leads require replacement.",
+    recommendations: "Full stator rewind in Class F / Class H insulation. Replace both DE and NDE bearings as a set (SKF or FAG). Re-varnish and oven-bake post-rewind. Full no-load and load test before dispatch. Recommend customer install phase-failure relay to prevent recurrence.",
+    estimated_cost: 86500,
+    status: "approved",
+    sent_at: "2026-06-11T17:00:00",
+    approved_at: "2026-06-13T09:30:00",
+  },
+  {
+    id: "ir_hpsteel",
+    case_id: "case_hpsteel",
+    findings: "DE bearing (NU 2320) heavily pitted with cage deformation — primary cause of vibration and noise. NDE bearing (6320) shows early-stage wear, replacement recommended. Dynamic balance check shows residual unbalance of 12 g·mm on rotor (IS 11723 G2.5 limit: 4 g·mm) — balancing required. Winding insulation resistance satisfactory (38–42 MΩ, limit: 10 MΩ). Labyrinth seal worn — oil leakage evident.",
+    recommendations: "Replace DE and NDE bearings (Toller or SKF). Perform dynamic rotor balancing to IS 11723 G2.5. Replace labyrinth seals and refit end-shields. HV withstand test (1500V / 1 min) on winding before reassembly. Issue HV test certificate on completion.",
+    estimated_cost: 142000,
+    status: "sent",
+    sent_at: "2026-06-15T16:30:00",
+    approved_at: null,
+  },
 ];

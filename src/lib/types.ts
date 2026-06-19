@@ -136,3 +136,59 @@ export type Activity = {
   text: string;
   at: string;
 };
+
+// ── Case module ──────────────────────────────────────────────────────────────
+
+export type CaseStatus =
+  | "intake"           // unit received at gate, intake photos taken
+  | "inspection"       // technician inspecting, inspection photos taken
+  | "report_sent"      // inspection report sent to customer
+  | "report_approved"  // customer approved findings
+  | "quote_sent"       // quotation sent
+  | "quote_approved"   // customer approved quote, repair authorized
+  | "in_repair"        // repair work underway
+  | "qa"               // quality check post-repair
+  | "ready"            // ready for pickup / dispatch
+  | "closed"           // delivered, case complete
+  | "buyback"          // customer sold unit to Vikas
+  | "scrapped";        // unit deemed uneconomical, scrapped
+
+export type CaseType = "amc" | "adhoc" | "direct";
+
+export type ServiceCase = {
+  id: string;
+  account_id: string;
+  ref: string;
+  type: CaseType;
+  status: CaseStatus;
+  asset_id: string | null;
+  equipment_label: string;   // human description, e.g. "Crompton 75 kW 3-Ph IM · CG-75-2291"
+  complaint: string;         // customer-reported symptom
+  assigned_to: string | null; // technician_id
+  intake_at: string;
+  closed_at: string | null;
+  quote_id: string | null;
+  contract_id: string | null;
+  has_loaner: boolean;
+  disposition: "repair" | "buyback" | "scrap" | null;
+  notes: string | null;
+};
+
+export type CasePhoto = {
+  id: string;
+  case_id: string;
+  stage: "intake" | "inspection" | "final";
+  caption: string;
+  taken_at: string;
+};
+
+export type InspectionReport = {
+  id: string;
+  case_id: string;
+  findings: string;
+  recommendations: string;
+  estimated_cost: number | null;
+  status: "draft" | "sent" | "approved" | "rejected";
+  sent_at: string | null;
+  approved_at: string | null;
+};

@@ -3,7 +3,7 @@
 // only this file. (isSupabaseConfigured() gate added when the project exists.)
 
 import * as seed from "./seed";
-import type { Account, Quote } from "@/lib/types";
+import type { Account, Quote, ServiceCase, CaseStatus } from "@/lib/types";
 
 export type AccountSummary = {
   account: Account;
@@ -121,4 +121,72 @@ export const QUOTE_STATUS_LABEL: Record<Quote["status"], string> = {
   sent: "Sent",
   approved: "Approved",
   rejected: "Rejected",
+};
+
+// ── Cases ────────────────────────────────────────────────────────────────────
+
+export type CaseSummary = {
+  serviceCase: ServiceCase;
+  account: Account;
+  technicianName: string | null;
+};
+
+export async function listCases(): Promise<CaseSummary[]> {
+  const accountById = new Map(seed.accounts.map((a) => [a.id, a]));
+  const techById = new Map(seed.technicians.map((t) => [t.id, t]));
+  return seed.serviceCases
+    .slice()
+    .sort((a, b) => +new Date(b.intake_at) - +new Date(a.intake_at))
+    .map((sc) => ({
+      serviceCase: sc,
+      account: accountById.get(sc.account_id)!,
+      technicianName: sc.assigned_to ? (techById.get(sc.assigned_to)?.name ?? null) : null,
+    }));
+}
+
+export async function getCase(id: string) {
+  const serviceCase = seed.serviceCases.find((c) => c.id === id);
+  if (!serviceCase) return null;
+
+  const account = seed.accounts.find((a) => a.id === serviceCase.account_id) ?? null;
+  const contact = seed.contacts.find((c) => c.account_id === serviceCase.account_id) ?? null;
+  const asset = serviceCase.asset_id
+    ? seed.assets.find((a) => a.id === serviceCase.asset_id) ?? null
+    : null;
+  const technician = serviceCase.assigned_to
+    ? seed.technicians.find((t) => t.id === serviceCase.assigned_to) ?? null
+    : null;
+  const contract = serviceCase.contract_id
+    ? seed.contracts.find((c) => c.id === serviceCase.contract_id) ?? null
+    : null;
+  const quote = serviceCase.quote_id
+    ? seed.quotes.find((q) => q.id === serviceCase.quote_id) ?? null
+    : null;
+  const photos = seed.casePhotos
+    .filter((p) => p.case_id === id)
+    .sort((a, b) => +new Date(a.taken_at) - +new Date(b.taken_at));
+  const inspectionReport = seed.inspectionReports.find((r) => r.case_id === id) ?? null;
+
+  return { serviceCase, account, contact, asset, technician, contract, quote, photos, inspectionReport };
+}
+
+export const CASE_STATUS_LABEL: Record<CaseStatus, string> = {
+  intake:          "Intake",
+  inspection:      "Inspection",
+  report_sent:     "Report sent",
+  report_approved: "Report approved",
+  quote_sent:      "Quote sent",
+  quote_approved:  "Quote approved",
+  in_repair:       "In repair",
+  qa:              "QA",
+  ready:           "Ready",
+  closed:          "Closed",
+  buyback:         "Buyback",
+  scrapped:        "Scrapped",
+};
+
+export const CASE_TYPE_LABEL: Record<ServiceCase["type"], string> = {
+  amc:    "AMC",
+  adhoc:  "Adhoc",
+  direct: "Direct",
 };

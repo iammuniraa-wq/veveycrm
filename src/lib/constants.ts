@@ -21,6 +21,7 @@ export const ROUTES = {
   account: (id: string) => `/accounts/${id}`,
   assets: "/assets",
   invoices: "/invoices",
+  case: (id: string) => `/cases/${id}`,
 } as const;
 
 export type NavItem = {
