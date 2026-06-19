@@ -296,7 +296,7 @@ export default function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
         </div>
       </div>
 
-      <nav style={{ flex: 1 }}>
+      <nav>
         {/* Favourites */}
         <div style={{
           fontSize: 9.5, letterSpacing: 1.1, fontWeight: 700,
@@ -335,37 +335,37 @@ export default function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
           accent={accent}
           compact={compact}
         />
-      </nav>
 
-      {/* Bottom fixed actions */}
-      <div style={{ borderTop: "1px solid rgba(255,255,255,.06)", paddingTop: 10, marginTop: 6, display: "flex", flexDirection: "column", gap: 2 }}>
-        <Link
-          href={ROUTES.settings}
-          onClick={onNavigate}
-          style={{
-            display: "flex", alignItems: "center", gap: 8,
-            padding: "7px 10px", borderRadius: 8, fontSize: 12.5,
-            color: isActive(ROUTES.settings) ? "#fff" : "#8aa0b8",
-            background: isActive(ROUTES.settings) ? accent : "transparent",
-            textDecoration: "none",
-            transition: "background 0.12s",
-          }}
-        >
-          <span style={{ fontSize: 14 }}>⚙</span>
-          Settings
-        </Link>
-        <button
-          onClick={resetNav}
-          style={{
-            background: "transparent", border: "none",
-            color: "#3d5166", fontSize: 11, cursor: "pointer",
-            padding: "4px 10px", borderRadius: 5,
-            textAlign: "left",
-          }}
-        >
-          ↺ Reset nav order
-        </button>
-      </div>
+        {/* Settings + reset — flow directly below nav items */}
+        <div style={{ borderTop: "1px solid rgba(255,255,255,.06)", marginTop: 10, paddingTop: 8 }}>
+          <Link
+            href={ROUTES.settings}
+            onClick={onNavigate}
+            style={{
+              display: "flex", alignItems: "center", gap: 8,
+              padding: "7px 10px", borderRadius: 8, fontSize: 12.5,
+              color: isActive(ROUTES.settings) ? "#fff" : "#8aa0b8",
+              background: isActive(ROUTES.settings) ? accent : "transparent",
+              textDecoration: "none",
+              transition: "background 0.12s",
+            }}
+          >
+            <span style={{ fontSize: 14 }}>⚙</span>
+            Settings
+          </Link>
+          <button
+            onClick={resetNav}
+            style={{
+              background: "transparent", border: "none",
+              color: "#3d5166", fontSize: 11, cursor: "pointer",
+              padding: "4px 10px", borderRadius: 5,
+              textAlign: "left", width: "100%",
+            }}
+          >
+            ↺ Reset nav order
+          </button>
+        </div>
+      </nav>
     </aside>
   );
 }
