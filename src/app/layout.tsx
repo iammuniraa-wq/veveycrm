@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import ThemeApplier from "@/components/ThemeApplier";
 
 export const metadata: Metadata = {
   title: "VeveyCRM — Vikas Pioneers workspace",
@@ -12,7 +13,10 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        <ThemeApplier />
+        {children}
+      </body>
     </html>
   );
 }

@@ -3,18 +3,19 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
-import { NAV, WORKSPACE_NAME } from "@/lib/constants";
+import { NAV, ROUTES } from "@/lib/constants";
 import type { NavItem } from "@/lib/constants";
-import { c, g } from "@/lib/theme";
+import { g } from "@/lib/theme";
 import Logo from "./Logo";
+import { useSettings, ACCENT_PRESETS } from "@/lib/settings";
 
-// ── Storage ───────────────────────────────────────────────────────────────────
+// ── Nav order persistence ─────────────────────────────────────────────────────
 
 const NAV_STATE_KEY = "vevey_nav_state_v2";
 
 type NavState = {
-  favs: string[]; // hrefs in favourite order
-  rest: string[]; // remaining hrefs in their order
+  favs: string[];
+  rest: string[];
 };
 
 type FlatItem = NavItem & { group: string };
@@ -32,40 +33,39 @@ function flattenNav(): FlatItem[] {
   return NAV.flatMap((grp) => grp.items.map((item) => ({ ...item, group: grp.group })));
 }
 
-function defaultState(): NavState {
+function defaultNavState(): NavState {
   return { favs: [], rest: flattenNav().map((i) => i.href) };
 }
 
-function loadState(): NavState {
-  if (typeof window === "undefined") return defaultState();
+function loadNavState(): NavState {
+  if (typeof window === "undefined") return defaultNavState();
   try {
     const raw = localStorage.getItem(NAV_STATE_KEY);
-    if (!raw) return defaultState();
+    if (!raw) return defaultNavState();
     const saved: NavState = JSON.parse(raw);
-    const all = flattenNav();
-    const allHrefs = all.map((i) => i.href);
-    const validFavs = saved.favs.filter((h) => allHrefs.includes(h));
-    const validRest = saved.rest.filter((h) => allHrefs.includes(h));
-    // Append any new items (added after last save) to rest.
+    const all = flattenNav().map((i) => i.href);
+    const validFavs = saved.favs.filter((h) => all.includes(h));
+    const validRest = saved.rest.filter((h) => all.includes(h));
     const known = new Set([...validFavs, ...validRest]);
-    const fresh = allHrefs.filter((h) => !known.has(h));
+    const fresh = all.filter((h) => !known.has(h));
     return { favs: validFavs, rest: [...validRest, ...fresh] };
   } catch {
-    return defaultState();
+    return defaultNavState();
   }
 }
 
-function saveState(s: NavState) {
+function saveNavState(s: NavState) {
   try { localStorage.setItem(NAV_STATE_KEY, JSON.stringify(s)); } catch {}
 }
 
-// ── Drop indicator ────────────────────────────────────────────────────────────
+// ── Drop line ─────────────────────────────────────────────────────────────────
 
-function DropLine() {
+function DropLine({ accent }: { accent: string }) {
   return (
     <div style={{
-      height: 2, background: "#378ADD", borderRadius: 2,
-      margin: "2px 6px", boxShadow: "0 0 8px #378ADD88",
+      height: 2, borderRadius: 2, margin: "2px 6px",
+      background: accent,
+      boxShadow: `0 0 8px ${accent}88`,
     }} />
   );
 }
@@ -77,21 +77,24 @@ type SectionProps = {
   isFavSection: boolean;
   isActive: (href: string) => boolean;
   onToggleFav: (href: string) => void;
-  onReorder: (reordered: FlatItem[]) => void;
+  onReorder: (items: FlatItem[]) => void;
   onNavigate?: () => void;
+  accent: string;
+  compact: boolean;
 };
 
-function DraggableSection({ items, isFavSection, isActive, onToggleFav, onReorder, onNavigate }: SectionProps) {
+function DraggableSection({
+  items, isFavSection, isActive, onToggleFav, onReorder, onNavigate, accent, compact,
+}: SectionProps) {
   const [dropAt, setDropAt]   = useState<number | null>(null);
   const [hovered, setHovered] = useState<number | null>(null);
-  const dragIdx = useRef<number | null>(null);
+  const dragIdx               = useRef<number | null>(null);
 
   const onDragStart = (e: React.DragEvent, idx: number) => {
     dragIdx.current = idx;
-    // Suppress the browser ghost so we can style via opacity instead.
-    const canvas = document.createElement("canvas");
-    canvas.width = canvas.height = 1;
-    e.dataTransfer.setDragImage(canvas, 0, 0);
+    const c = document.createElement("canvas");
+    c.width = c.height = 1;
+    e.dataTransfer.setDragImage(c, 0, 0);
     e.dataTransfer.effectAllowed = "move";
   };
 
@@ -119,27 +122,22 @@ function DraggableSection({ items, isFavSection, isActive, onToggleFav, onReorde
 
   const onDragEnd = () => { dragIdx.current = null; setDropAt(null); };
 
-  if (items.length === 0) {
-    if (isFavSection) {
-      return (
-        <div style={{ padding: "6px 10px 8px", fontSize: 11, color: "#3a5166", fontStyle: "italic" }}>
-          Hover an item below and click ☆ to pin it here
-        </div>
-      );
-    }
-    return null;
+  if (items.length === 0 && isFavSection) {
+    return (
+      <div style={{ padding: "5px 10px 8px", fontSize: 11, color: "#3a5166", fontStyle: "italic" }}>
+        Hover an item below · click ☆ to pin
+      </div>
+    );
   }
 
+  const py = compact ? "6px" : "8px";
+
   return (
-    <div
-      onDragOver={(e) => e.preventDefault()}
-      onDrop={onDrop}
-    >
+    <div onDragOver={(e) => e.preventDefault()} onDrop={onDrop}>
       {items.map((item, idx) => {
-        const on          = isActive(item.href);
-        const isDragging  = dragIdx.current === idx;
-        const dotColor    = PILLAR_COLOR[item.pillar] ?? "#378ADD";
-        const showHover   = hovered === idx;
+        const on         = isActive(item.href);
+        const isDragging = dragIdx.current === idx;
+        const showHover  = hovered === idx;
 
         return (
           <div
@@ -151,43 +149,32 @@ function DraggableSection({ items, isFavSection, isActive, onToggleFav, onReorde
             onMouseEnter={() => setHovered(idx)}
             onMouseLeave={() => setHovered(null)}
           >
-            {dropAt === idx && <DropLine />}
+            {dropAt === idx && <DropLine accent={accent} />}
 
             <Link
               href={item.href}
               onClick={onNavigate}
               style={{
-                display:       "flex",
-                alignItems:    "center",
-                gap:           9,
-                padding:       "8px 10px",
-                borderRadius:  8,
-                fontSize:      13,
-                marginBottom:  1,
-                color:         on ? "#fff" : "#aebccd",
-                background:    on ? c.accent : "transparent",
-                opacity:       isDragging ? 0.35 : 1,
+                display: "flex", alignItems: "center", gap: 9,
+                padding: `${py} 10px`,
+                borderRadius: 8, fontSize: 13, marginBottom: 1,
+                color: on ? "#fff" : "#aebccd",
+                background: on ? accent : "transparent",
+                opacity: isDragging ? 0.35 : 1,
                 textDecoration: "none",
-                userSelect:    "none",
-                transition:    "background 0.12s",
-                cursor:        "default",
+                userSelect: "none",
+                transition: "background 0.12s",
+                cursor: "default",
               }}
             >
-              {/* Pillar dot */}
               <span style={{
                 width: 5, height: 5, borderRadius: "50%", flexShrink: 0,
-                background: on ? "rgba(255,255,255,.6)" : dotColor,
+                background: on ? "rgba(255,255,255,.6)" : (PILLAR_COLOR[item.pillar] ?? "#378ADD"),
               }} />
-
-              {/* Icon */}
               <span style={{ width: 16, textAlign: "center", fontSize: 14, flexShrink: 0 }}>
                 {item.icon}
               </span>
-
-              {/* Label */}
               <span style={{ flex: 1 }}>{item.label}</span>
-
-              {/* Badge */}
               {item.badge != null && (
                 <span style={{
                   fontSize: 10, background: "rgba(255,255,255,.13)", color: "#dce6f1",
@@ -196,42 +183,28 @@ function DraggableSection({ items, isFavSection, isActive, onToggleFav, onReorde
                   {item.badge}
                 </span>
               )}
-
-              {/* Star — always visible (filled) for fav items; hollow on hover for rest items */}
               {(isFavSection || showHover) && (
                 <span
                   onClick={(e) => { e.preventDefault(); e.stopPropagation(); onToggleFav(item.href); }}
                   title={isFavSection ? "Remove from favourites" : "Add to favourites"}
                   style={{
-                    fontSize: 13,
+                    fontSize: 13, flexShrink: 0, cursor: "pointer", lineHeight: 1,
                     color: isFavSection ? "#f6b23c" : "rgba(255,255,255,.28)",
-                    flexShrink: 0,
-                    cursor: "pointer",
-                    lineHeight: 1,
                   }}
                 >
                   {isFavSection ? "★" : "☆"}
                 </span>
               )}
-
-              {/* Drag handle */}
               <span style={{
-                fontSize: 14,
-                color:    showHover ? "rgba(255,255,255,.3)" : "transparent",
-                flexShrink: 0,
-                cursor:   "grab",
-                lineHeight: 1,
+                fontSize: 14, flexShrink: 0, cursor: "grab", lineHeight: 1,
+                color: showHover ? "rgba(255,255,255,.3)" : "transparent",
                 transition: "color 0.1s",
-              }}>
-                ⠿
-              </span>
+              }}>⠿</span>
             </Link>
           </div>
         );
       })}
-
-      {/* Drop zone after last item */}
-      {dropAt === items.length && <DropLine />}
+      {dropAt === items.length && <DropLine accent={accent} />}
     </div>
   );
 }
@@ -240,67 +213,69 @@ function DraggableSection({ items, isFavSection, isActive, onToggleFav, onReorde
 
 export default function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
+  const { settings } = useSettings();
 
-  // Initialize with defaults (SSR-safe), hydrate from localStorage on mount.
-  const [state, setState] = useState<NavState>(defaultState);
+  const accent  = ACCENT_PRESETS[settings.accentPreset].color;
+  const compact = settings.compactSidebar;
 
-  useEffect(() => {
-    setState(loadState());
-  }, []);
+  const [navState, setNavState] = useState<NavState>(defaultNavState);
+  useEffect(() => { setNavState(loadNavState()); }, []);
 
-  // Derive ordered FlatItem lists from the stored href arrays.
-  const allItemsMap = new Map(flattenNav().map((i) => [i.href, i]));
-  const favItems  = state.favs.map((h) => allItemsMap.get(h)).filter((i): i is FlatItem => !!i);
-  const restItems = state.rest.map((h) => allItemsMap.get(h)).filter((i): i is FlatItem => !!i);
+  const allMap  = new Map(flattenNav().map((i) => [i.href, i]));
+  const hidden  = new Set(settings.hiddenNavHrefs);
+
+  const favItems  = navState.favs
+    .filter((h) => !hidden.has(h))
+    .map((h) => allMap.get(h)).filter((i): i is FlatItem => !!i);
+
+  const restItems = navState.rest
+    .filter((h) => !hidden.has(h))
+    .map((h) => allMap.get(h)).filter((i): i is FlatItem => !!i);
 
   const isActive = (href: string) =>
-    href === "/"
-      ? pathname === "/"
-      : pathname === href || pathname.startsWith(href + "/");
+    href === "/" ? pathname === "/" : pathname === href || pathname.startsWith(href + "/");
 
   const toggleFav = (href: string) => {
-    const isFav = state.favs.includes(href);
+    const isFav = navState.favs.includes(href);
     const next: NavState = isFav
-      ? { favs: state.favs.filter((h) => h !== href), rest: [href, ...state.rest] }
-      : { favs: [...state.favs, href],                rest: state.rest.filter((h) => h !== href) };
-    setState(next);
-    saveState(next);
+      ? { favs: navState.favs.filter((h) => h !== href), rest: [href, ...navState.rest] }
+      : { favs: [...navState.favs, href],                rest: navState.rest.filter((h) => h !== href) };
+    setNavState(next);
+    saveNavState(next);
   };
 
-  const reorderFavs = (reordered: FlatItem[]) => {
-    const next = { ...state, favs: reordered.map((i) => i.href) };
-    setState(next);
-    saveState(next);
+  const reorderFavs = (items: FlatItem[]) => {
+    const next = { ...navState, favs: items.map((i) => i.href) };
+    setNavState(next);
+    saveNavState(next);
   };
 
-  const reorderRest = (reordered: FlatItem[]) => {
-    const next = { ...state, rest: reordered.map((i) => i.href) };
-    setState(next);
-    saveState(next);
+  const reorderRest = (items: FlatItem[]) => {
+    const next = { ...navState, rest: items.map((i) => i.href) };
+    setNavState(next);
+    saveNavState(next);
   };
 
-  const resetToDefault = () => {
-    const fresh = defaultState();
-    setState(fresh);
-    saveState(fresh);
+  const resetNav = () => {
+    const fresh = defaultNavState();
+    setNavState(fresh);
+    saveNavState(fresh);
   };
-
-  const hasFavs = favItems.length > 0 || true; // always show favourites section so hint is visible
 
   return (
-    <aside
-      style={{
-        width: 236,
-        background: g.sidebar,
-        flexShrink: 0,
-        padding: "16px 12px",
-        color: "#aebccd",
-        minHeight: "100vh",
-        display: "flex",
-        flexDirection: "column",
-      }}
-    >
-      {/* Logo / workspace header */}
+    <aside style={{
+      width: compact ? 210 : 236,
+      background: g.sidebar,
+      flexShrink: 0,
+      padding: "16px 12px",
+      color: "#aebccd",
+      minHeight: "100vh",
+      display: "flex",
+      flexDirection: "column",
+      transition: "width 0.2s",
+    }}>
+
+      {/* Logo */}
       <div style={{
         display: "flex", alignItems: "center", gap: 9,
         padding: "4px 6px 14px",
@@ -308,25 +283,27 @@ export default function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
         marginBottom: 12,
       }}>
         <Logo size={34} />
-        <div>
+        <div style={{ minWidth: 0 }}>
           <div style={{ fontWeight: 600, color: "#fff", fontSize: 14 }}>
             Vevey<span style={{ color: "#7fb4ec" }}>CRM</span>
           </div>
-          <div style={{ fontSize: 11, color: "#8aa0b8" }}>{WORKSPACE_NAME}</div>
+          <div style={{
+            fontSize: 11, color: "#8aa0b8",
+            overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+          }}>
+            {settings.workspaceName}
+          </div>
         </div>
       </div>
 
       <nav style={{ flex: 1 }}>
-
-        {/* ── Favourites section ── */}
+        {/* Favourites */}
         <div style={{
           fontSize: 9.5, letterSpacing: 1.1, fontWeight: 700,
           color: "#f6b23c", paddingLeft: 10, marginBottom: 3,
-          display: "flex", alignItems: "center", gap: 5,
         }}>
           ★ FAVOURITES
         </div>
-
         <DraggableSection
           items={favItems}
           isFavSection={true}
@@ -334,22 +311,20 @@ export default function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
           onToggleFav={toggleFav}
           onReorder={reorderFavs}
           onNavigate={onNavigate}
+          accent={accent}
+          compact={compact}
         />
 
-        {/* ── Divider ── */}
-        <div style={{
-          borderTop: "1px solid rgba(255,255,255,.08)",
-          margin: "10px 4px 10px",
-        }} />
+        {/* Divider */}
+        <div style={{ borderTop: "1px solid rgba(255,255,255,.08)", margin: "10px 4px" }} />
 
-        {/* ── All items section ── */}
+        {/* All items */}
         <div style={{
           fontSize: 9.5, letterSpacing: 1.1, fontWeight: 600,
           color: "#3d5166", paddingLeft: 10, marginBottom: 3,
         }}>
-          ALL · drag to reorder · ☆ to pin
+          ALL · drag · ☆ to pin
         </div>
-
         <DraggableSection
           items={restItems}
           isFavSection={false}
@@ -357,21 +332,38 @@ export default function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
           onToggleFav={toggleFav}
           onReorder={reorderRest}
           onNavigate={onNavigate}
+          accent={accent}
+          compact={compact}
         />
       </nav>
 
-      {/* Reset */}
-      <div style={{ borderTop: "1px solid rgba(255,255,255,.05)", paddingTop: 10, marginTop: 4 }}>
-        <button
-          onClick={resetToDefault}
+      {/* Bottom fixed actions */}
+      <div style={{ borderTop: "1px solid rgba(255,255,255,.06)", paddingTop: 10, marginTop: 6, display: "flex", flexDirection: "column", gap: 2 }}>
+        <Link
+          href={ROUTES.settings}
+          onClick={onNavigate}
           style={{
-            background: "transparent", border: "none",
-            color: "#3d5166", fontSize: 11,
-            cursor: "pointer", padding: "4px 8px",
-            borderRadius: 5, width: "100%", textAlign: "left",
+            display: "flex", alignItems: "center", gap: 8,
+            padding: "7px 10px", borderRadius: 8, fontSize: 12.5,
+            color: isActive(ROUTES.settings) ? "#fff" : "#8aa0b8",
+            background: isActive(ROUTES.settings) ? accent : "transparent",
+            textDecoration: "none",
+            transition: "background 0.12s",
           }}
         >
-          ↺ Reset nav & favourites
+          <span style={{ fontSize: 14 }}>⚙</span>
+          Settings
+        </Link>
+        <button
+          onClick={resetNav}
+          style={{
+            background: "transparent", border: "none",
+            color: "#3d5166", fontSize: 11, cursor: "pointer",
+            padding: "4px 10px", borderRadius: 5,
+            textAlign: "left",
+          }}
+        >
+          ↺ Reset nav order
         </button>
       </div>
     </aside>

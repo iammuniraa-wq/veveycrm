@@ -22,6 +22,7 @@ export const ROUTES = {
   assets: "/assets",
   invoices: "/invoices",
   case: (id: string) => `/cases/${id}`,
+  settings: "/settings",
 } as const;
 
 export type NavItem = {

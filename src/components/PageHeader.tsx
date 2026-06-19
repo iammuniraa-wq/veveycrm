@@ -23,7 +23,7 @@ export default function PageHeader({
             fontSize: 19,
             margin: 0,
             paddingLeft: 12,
-            borderLeft: `3px solid ${c.accent}`,
+            borderLeft: "3px solid var(--vevey-accent, #378ADD)",
             fontWeight: 600,
           }}
         >
