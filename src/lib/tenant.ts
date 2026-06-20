@@ -1,0 +1,87 @@
+import { createServerSupabase, createAdminSupabase } from "./supabase-server";
+
+export type TenantFeatures = {
+  leads: boolean;
+  pipeline: boolean;
+  amc: boolean;
+  dispatch: boolean;
+  invoices: boolean;
+  partners: boolean;
+  ai_assistant: boolean;
+  db_export: boolean;
+};
+
+export type Tenant = {
+  id: string;
+  slug: string;
+  name: string;
+  logo_url: string | null;
+  accent_color: string;
+  status: "active" | "suspended" | "trial";
+  plan: "free" | "pro" | "enterprise";
+  features: TenantFeatures;
+};
+
+/** Load the current user's tenant (anon client — respects RLS). */
+export async function getTenant(): Promise<Tenant | null> {
+  const supabase = await createServerSupabase();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return null;
+
+  const { data } = await supabase
+    .from("tenants")
+    .select("id, slug, name, logo_url, accent_color, status, plan, features")
+    .single();
+
+  return (data as Tenant) ?? null;
+}
+
+/** Admin: list all tenants. Uses service role. */
+export async function adminListTenants(): Promise<Tenant[]> {
+  const { data } = await createAdminSupabase()
+    .from("tenants")
+    .select("id, slug, name, logo_url, accent_color, status, plan, features, created_at")
+    .order("created_at", { ascending: false });
+  return (data as Tenant[]) ?? [];
+}
+
+/** Admin: update tenant features / status / plan. */
+export async function adminUpdateTenant(
+  id: string,
+  patch: Partial<Pick<Tenant, "status" | "plan" | "features" | "name" | "logo_url" | "accent_color">>
+) {
+  return createAdminSupabase().from("tenants").update(patch).eq("id", id);
+}
+
+/** Admin: check if the current user is a platform admin. */
+export async function isPlatformAdmin(): Promise<boolean> {
+  const supabase = await createServerSupabase();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return false;
+
+  const { data } = await createAdminSupabase()
+    .from("platform_admins")
+    .select("id")
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  if (data) return true;
+
+  // Fallback: check email in case user_id not yet linked
+  const { data: byEmail } = await createAdminSupabase()
+    .from("platform_admins")
+    .select("id")
+    .eq("email", user.email ?? "")
+    .maybeSingle();
+
+  // Link user_id if found by email
+  if (byEmail) {
+    await createAdminSupabase()
+      .from("platform_admins")
+      .update({ user_id: user.id })
+      .eq("email", user.email ?? "");
+    return true;
+  }
+
+  return false;
+}

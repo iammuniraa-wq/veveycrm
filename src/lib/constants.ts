@@ -31,6 +31,8 @@ export const ROUTES = {
   case: (id: string) => `/cases/${id}`,
   settings: "/settings",
   reports: "/reports",
+  admin: "/admin",
+  adminTenant: (id: string) => `/admin/tenants/${id}`,
 } as const;
 
 export type NavItem = {
@@ -39,6 +41,8 @@ export type NavItem = {
   icon: string;
   badge?: number;
   pillar: PillarKey;
+  /** If set, item is hidden unless the tenant has this feature enabled. */
+  featureKey?: string;
 };
 
 export type NavGroup = { group: string; items: NavItem[] };
@@ -58,8 +62,8 @@ export const NAV: NavGroup[] = [
   {
     group: "MARKETING",
     items: [
-      { label: "Leads", href: ROUTES.leads, icon: "✦", pillar: "purple", badge: 12 },
-      { label: "Partners", href: ROUTES.partners, icon: "⌂", pillar: "purple" },
+      { label: "Leads", href: ROUTES.leads, icon: "✦", pillar: "purple", badge: 12, featureKey: "leads" },
+      { label: "Partners", href: ROUTES.partners, icon: "⌂", pillar: "purple", featureKey: "partners" },
     ],
   },
   {
@@ -71,14 +75,14 @@ export const NAV: NavGroup[] = [
   {
     group: "SERVICE",
     items: [
-      { label: "AMC contracts", href: ROUTES.amc, icon: "▥", pillar: "teal" },
+      { label: "AMC contracts", href: ROUTES.amc, icon: "▥", pillar: "teal", featureKey: "amc" },
     ],
   },
   {
     group: "FIELD SERVICE",
     items: [
       { label: "Work orders", href: ROUTES.workOrders, icon: "▤", pillar: "amber" },
-      { label: "Dispatch", href: ROUTES.dispatch, icon: "◷", pillar: "amber" },
+      { label: "Dispatch", href: ROUTES.dispatch, icon: "◷", pillar: "amber", featureKey: "dispatch" },
       { label: "Technicians", href: ROUTES.technicians, icon: "◍", pillar: "amber" },
     ],
   },
@@ -86,7 +90,7 @@ export const NAV: NavGroup[] = [
     group: "RECORDS",
     items: [
       { label: "Assets",    href: ROUTES.assets,    icon: "⚙", pillar: "green" },
-      { label: "Invoices",  href: ROUTES.invoices,  icon: "⊟", pillar: "green" },
+      { label: "Invoices",  href: ROUTES.invoices,  icon: "⊟", pillar: "green", featureKey: "invoices" },
       { label: "Analytics", href: ROUTES.reports,   icon: "◫", pillar: "purple" },
     ],
   },

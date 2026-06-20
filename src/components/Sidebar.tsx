@@ -2,12 +2,14 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { NAV, ROUTES } from "@/lib/constants";
 import type { NavItem } from "@/lib/constants";
 import { g } from "@/lib/theme";
 import Logo from "./Logo";
 import { useSettings, ACCENT_PRESETS } from "@/lib/settings";
+import { useTenant } from "@/lib/tenant-context";
+import { createBrowserSupabase } from "@/lib/supabase-browser";
 
 // ── Nav order persistence ─────────────────────────────────────────────────────
 
@@ -21,21 +23,25 @@ type NavState = {
 type FlatItem = NavItem & { group: string };
 
 
-function flattenNav(): FlatItem[] {
-  return NAV.flatMap((grp) => grp.items.map((item) => ({ ...item, group: grp.group })));
+function flattenNav(features?: Record<string, boolean>): FlatItem[] {
+  return NAV.flatMap((grp) =>
+    grp.items
+      .filter((item) => !item.featureKey || features?.[item.featureKey] === true)
+      .map((item) => ({ ...item, group: grp.group }))
+  );
 }
 
-function defaultNavState(): NavState {
-  return { favs: [], rest: flattenNav().map((i) => i.href) };
+function defaultNavState(features?: Record<string, boolean>): NavState {
+  return { favs: [], rest: flattenNav(features).map((i) => i.href) };
 }
 
-function loadNavState(): NavState {
-  if (typeof window === "undefined") return defaultNavState();
+function loadNavState(features?: Record<string, boolean>): NavState {
+  if (typeof window === "undefined") return defaultNavState(features);
   try {
     const raw = localStorage.getItem(NAV_STATE_KEY);
-    if (!raw) return defaultNavState();
+    if (!raw) return defaultNavState(features);
     const saved: NavState = JSON.parse(raw);
-    const all = flattenNav().map((i) => i.href);
+    const all = flattenNav(features).map((i) => i.href);
     const validFavs = saved.favs.filter((h) => all.includes(h));
     const validRest = saved.rest.filter((h) => all.includes(h));
     const known = new Set([...validFavs, ...validRest]);
@@ -199,22 +205,81 @@ function DraggableSection({
 
 // ── Main sidebar ──────────────────────────────────────────────────────────────
 
+function UserFooter({ accent }: { accent: string }) {
+  const [email, setEmail] = useState<string | null>(null);
+  const router = useRouter();
+
+  useEffect(() => {
+    createBrowserSupabase().auth.getUser().then(({ data }) => {
+      setEmail(data.user?.email ?? null);
+    });
+  }, []);
+
+  async function signOut() {
+    await createBrowserSupabase().auth.signOut();
+    router.push("/login");
+  }
+
+  if (!email) return null;
+
+  const initials = email.slice(0, 2).toUpperCase();
+
+  return (
+    <div style={{
+      borderTop: "1px solid rgba(255,255,255,.07)",
+      paddingTop: 10, marginTop: 8,
+      display: "flex", alignItems: "center", gap: 8,
+    }}>
+      <div style={{
+        width: 30, height: 30, borderRadius: "50%", flexShrink: 0,
+        background: accent, color: "#fff",
+        display: "flex", alignItems: "center", justifyContent: "center",
+        fontSize: 11, fontWeight: 700,
+      }}>
+        {initials}
+      </div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{
+          fontSize: 11, color: "#8aa0b8",
+          overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+        }}>
+          {email}
+        </div>
+      </div>
+      <button
+        onClick={signOut}
+        title="Sign out"
+        style={{
+          background: "transparent", border: "none",
+          color: "#4a6070", cursor: "pointer",
+          fontSize: 14, padding: 4, borderRadius: 4,
+          flexShrink: 0,
+        }}
+      >
+        ⏻
+      </button>
+    </div>
+  );
+}
+
 export default function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
   const { settings } = useSettings();
+  const tenant = useTenant();
 
-  const accent  = ACCENT_PRESETS[settings.accentPreset].color;
+  const features = tenant?.features as Record<string, boolean> | undefined;
+  const accent  = tenant?.accent_color ?? ACCENT_PRESETS[settings.accentPreset].color;
   const compact = settings.compactSidebar;
 
-  const [navState, setNavState] = useState<NavState>(defaultNavState);
-  useEffect(() => { setNavState(loadNavState()); }, []);
+  const [navState, setNavState] = useState<NavState>(() => defaultNavState(features));
+  useEffect(() => { setNavState(loadNavState(features)); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const [settingsOpen, setSettingsOpen] = useState(false);
   useEffect(() => {
     if (pathname.startsWith(ROUTES.settings)) setSettingsOpen(true);
   }, [pathname]);
 
-  const allMap  = new Map(flattenNav().map((i) => [i.href, i]));
+  const allMap  = new Map(flattenNav(features).map((i) => [i.href, i]));
   const hidden  = new Set(settings.hiddenNavHrefs);
 
   const favItems  = navState.favs
@@ -284,7 +349,7 @@ export default function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
             fontSize: 11, color: "#8aa0b8",
             overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
           }}>
-            {settings.workspaceName}
+            {tenant?.name ?? settings.workspaceName}
           </div>
         </div>
       </div>
@@ -397,6 +462,8 @@ export default function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
           </button>
         </div>
       </nav>
+
+      <UserFooter accent={accent} />
     </aside>
   );
 }
