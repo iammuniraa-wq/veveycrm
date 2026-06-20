@@ -41,7 +41,8 @@ export default function QuotePrint({ quote, account, contact, site, lines, revis
     web:              companyInfo.web              ?? COMPANY.web,
     gstin:            companyInfo.gstin            ?? COMPANY.gstin,
     iso:              companyInfo.iso              ?? COMPANY.iso,
-    partners:         companyInfo.partners         ?? COMPANY.partners,
+    partners:         companyInfo.partners ?? null,
+    partners_text:    COMPANY.partners,
     footer_tagline:   companyInfo.footer_tagline   ?? COMPANY.footer_tagline,
   };
 
@@ -127,12 +128,28 @@ export default function QuotePrint({ quote, account, contact, site, lines, revis
               <div style={{ display: "inline-block", background: brand.amber, color: brand.dark, fontSize: 11, fontWeight: 700, padding: "2px 10px", borderRadius: 4, marginTop: 5 }}>
                 Rev. {quote.revision}
               </div>
-              {co.partners && (
-                <div style={{ marginTop: 10, fontSize: 9.5, color: "#7a9ab8", lineHeight: 1.6 }}>
-                  <div style={{ color: "#FFB347", fontWeight: 600, marginBottom: 2 }}>Authorised Channel Partner</div>
-                  {co.partners}
-                </div>
-              )}
+              <div style={{ marginTop: 10 }}>
+                <div style={{ color: "#FFB347", fontWeight: 600, fontSize: 9.5, marginBottom: 5 }}>Authorised Channel Partner</div>
+                {co.partners && co.partners.length > 0 ? (
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6, justifyContent: "flex-end" }}>
+                    {co.partners.map((p, i) => (
+                      p.logo_url ? (
+                        <img
+                          key={i}
+                          src={p.logo_url}
+                          alt={p.name}
+                          title={p.name}
+                          style={{ height: 22, maxWidth: 52, objectFit: "contain", background: "#fff", borderRadius: 3, padding: "1px 4px" }}
+                        />
+                      ) : (
+                        <span key={i} style={{ fontSize: 9.5, color: "#7a9ab8", background: "rgba(255,255,255,.08)", borderRadius: 3, padding: "2px 6px" }}>{p.name}</span>
+                      )
+                    ))}
+                  </div>
+                ) : (
+                  <div style={{ fontSize: 9.5, color: "#7a9ab8" }}>{co.partners_text}</div>
+                )}
+              </div>
             </div>
           </div>
 

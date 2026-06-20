@@ -24,7 +24,7 @@ export type CompanyInfo = {
   web?: string;
   gstin?: string;
   iso?: string;
-  partners?: string;
+  partners?: { name: string; logo_url?: string }[];
   footer_tagline?: string;
 };
 

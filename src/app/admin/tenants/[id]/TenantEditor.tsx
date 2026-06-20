@@ -39,11 +39,29 @@ export default function TenantEditor({ tenant, users }: Props) {
   const [plan, setPlan]               = useState(tenant.plan);
   const [features, setFeatures]       = useState<TenantFeatures>({ ...tenant.features });
   const [info, setInfo]               = useState<CompanyInfo>({ ...(tenant.company_info ?? {}) });
+  const [partners, setPartners]       = useState<{ name: string; logo_url: string }[]>(
+    (tenant.company_info?.partners ?? []).map((p) => ({ name: p.name, logo_url: p.logo_url ?? "" }))
+  );
   const [saved, setSaved]             = useState(false);
   const [error, setError]             = useState("");
 
-  function setInfoField(key: keyof CompanyInfo, val: string) {
+  function setInfoField(key: keyof Omit<CompanyInfo, "partners">, val: string) {
     setInfo((prev) => ({ ...prev, [key]: val }));
+    setSaved(false);
+  }
+
+  function setPartnerField(i: number, key: "name" | "logo_url", val: string) {
+    setPartners((prev) => prev.map((p, idx) => idx === i ? { ...p, [key]: val } : p));
+    setSaved(false);
+  }
+
+  function addPartner() {
+    setPartners((prev) => [...prev, { name: "", logo_url: "" }]);
+    setSaved(false);
+  }
+
+  function removePartner(i: number) {
+    setPartners((prev) => prev.filter((_, idx) => idx !== i));
     setSaved(false);
   }
 
@@ -59,7 +77,7 @@ export default function TenantEditor({ tenant, users }: Props) {
       const res = await fetch(`/api/admin/tenants/${tenant.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, slug, accent_color: accentColor, logo_url: logoUrl || null, status, plan, features, company_info: info }),
+        body: JSON.stringify({ name, slug, accent_color: accentColor, logo_url: logoUrl || null, status, plan, features, company_info: { ...info, partners: partners.filter((p) => p.name.trim()) } }),
       });
       if (res.ok) {
         setSaved(true);
@@ -132,19 +150,66 @@ export default function TenantEditor({ tenant, users }: Props) {
             { key: "web",              label: "Website",                      placeholder: "www.vikaspioneers.com" },
             { key: "gstin",            label: "GSTIN",                        placeholder: "29AHHPG0831F1ZN" },
             { key: "iso",              label: "Certification",                placeholder: "ISO 9001:2015" },
-            { key: "partners",         label: "Channel partners (comma/dot separated)", placeholder: "ABB · WEG · SIEMENS · Kirloskar · Jyoti Ltd. · Marathon" },
             { key: "footer_tagline",   label: "Footer tagline",               placeholder: "Assuring our best services as always!" },
-          ] as { key: keyof CompanyInfo; label: string; placeholder: string }[]).map(({ key, label, placeholder }) => (
+          ] as { key: keyof Omit<CompanyInfo, "partners">; label: string; placeholder: string }[]).map(({ key, label, placeholder }) => (
             <div key={key}>
               <label style={{ fontSize: 12, color: "#6b7280", display: "block", marginBottom: 3 }}>{label}</label>
               <input
                 style={inputStyle}
-                value={info[key] ?? ""}
+                value={(info[key] as string) ?? ""}
                 placeholder={placeholder}
                 onChange={(e) => setInfoField(key, e.target.value)}
               />
             </div>
           ))}
+
+          {/* Channel Partners — dynamic logo list */}
+          <div>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
+              <label style={{ fontSize: 12, color: "#6b7280" }}>Channel partners (with logos)</label>
+              <button
+                type="button"
+                onClick={addPartner}
+                style={{ fontSize: 12, color: "#3b82f6", background: "none", border: "none", cursor: "pointer", fontWeight: 500 }}
+              >
+                + Add partner
+              </button>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {partners.map((p, i) => (
+                <div key={i} style={{ display: "grid", gridTemplateColumns: "1fr 2fr auto", gap: 6, alignItems: "center" }}>
+                  <input
+                    style={inputStyle}
+                    value={p.name}
+                    placeholder="Partner name (e.g. ABB)"
+                    onChange={(e) => setPartnerField(i, "name", e.target.value)}
+                  />
+                  <input
+                    style={inputStyle}
+                    value={p.logo_url}
+                    placeholder="Logo URL (https://…)"
+                    onChange={(e) => setPartnerField(i, "logo_url", e.target.value)}
+                  />
+                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                    {p.logo_url && (
+                      <img src={p.logo_url} alt={p.name} style={{ height: 24, maxWidth: 48, objectFit: "contain", borderRadius: 3, border: "1px solid #e5e7eb" }} />
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => removePartner(i)}
+                      style={{ background: "none", border: "none", cursor: "pointer", color: "#ef4444", fontSize: 16, lineHeight: 1 }}
+                      title="Remove"
+                    >
+                      ×
+                    </button>
+                  </div>
+                </div>
+              ))}
+              {partners.length === 0 && (
+                <div style={{ fontSize: 12, color: "#9ca3af", padding: "8px 0" }}>No partners added yet. Click "+ Add partner" above.</div>
+              )}
+            </div>
+          </div>
         </div>
       </section>
 
