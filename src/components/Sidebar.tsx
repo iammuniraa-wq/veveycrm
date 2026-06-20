@@ -226,8 +226,8 @@ function UserFooter({ accent }: { accent: string }) {
 
   return (
     <div style={{
-      borderTop: "1px solid rgba(255,255,255,.07)",
-      paddingTop: 10, marginTop: 8,
+      borderBottom: "1px solid rgba(255,255,255,.07)",
+      paddingBottom: 10, marginBottom: 10,
       display: "flex", alignItems: "center", gap: 8,
     }}>
       <div style={{
@@ -354,6 +354,8 @@ export default function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
         </div>
       </div>
 
+      <UserFooter accent={accent} />
+
       <nav>
         {/* Favourites */}
         <div style={{
@@ -462,8 +464,6 @@ export default function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
           </button>
         </div>
       </nav>
-
-      <UserFooter accent={accent} />
     </aside>
   );
 }
