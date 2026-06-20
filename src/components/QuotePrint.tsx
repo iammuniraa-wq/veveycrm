@@ -79,30 +79,52 @@ export default function QuotePrint({ quote, account, contact, site, lines, revis
       {/* ── A4 Document ─────────────────────────────────────── */}
       <div className="doc">
 
-        {/* Header */}
-        <div style={{ background: brand.dark, padding: "22px 28px 18px", display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-          <div>
-            {/* V logo */}
-            <svg width="38" height="38" viewBox="0 0 96 96" style={{ marginBottom: 8 }}>
-              <rect width="96" height="96" rx="16" fill={brand.blue} />
-              <path d="M29 29L48 63L67 29" fill="none" stroke="#fff" strokeWidth="10" strokeLinecap="round" strokeLinejoin="round" />
-              <circle cx="48" cy="63" r="8" fill={brand.amber} />
-            </svg>
-            <div style={{ color: "#fff", fontWeight: 600, fontSize: 15, letterSpacing: -0.3 }}>{COMPANY.name}</div>
-            <div style={{ color: "#7fb4ec", fontSize: 11, marginTop: 3 }}>{COMPANY.tagline}</div>
-            <div style={{ color: "#8aa0b8", fontSize: 10.5, marginTop: 6 }}>
-              {COMPANY.address}<br />
-              {COMPANY.phone} · {COMPANY.email}<br />
-              GSTIN: {COMPANY.gstin} · PAN: {COMPANY.pan}
+        {/* Header — Vikas Pioneers letterhead */}
+        <div style={{ background: brand.dark, padding: "20px 28px 16px" }}>
+          {/* Top row: logo + company identity | quotation title */}
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 16 }}>
+            <div style={{ display: "flex", alignItems: "flex-start", gap: 14 }}>
+              {/* VP circular logo */}
+              <svg width="54" height="54" viewBox="0 0 100 100" style={{ flexShrink: 0, marginTop: 2 }}>
+                <circle cx="50" cy="50" r="50" fill="#E65C00" />
+                <circle cx="50" cy="50" r="43" fill="none" stroke="#FFB347" strokeWidth="2.5" />
+                <text x="50" y="60" textAnchor="middle" fontFamily="Georgia, serif" fontWeight="700" fontSize="34" fill="#fff" letterSpacing="-1">VP</text>
+              </svg>
+              <div>
+                <div style={{ color: "#fff", fontWeight: 800, fontSize: 16, letterSpacing: 0.6, textTransform: "uppercase" }}>{COMPANY.name}</div>
+                <div style={{ color: "#FFB347", fontSize: 11.5, fontWeight: 600, marginTop: 3, letterSpacing: 0.3 }}>{COMPANY.tagline}</div>
+                <div style={{ color: "#8aa0b8", fontSize: 10, marginTop: 5, lineHeight: 1.55 }}>
+                  We undertake: {COMPANY.undertaking}
+                </div>
+              </div>
+            </div>
+            <div style={{ textAlign: "right", flexShrink: 0 }}>
+              <div style={{ color: "#fff", fontSize: 26, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase" }}>Quotation</div>
+              <div style={{ color: brand.amber, fontSize: 14, fontWeight: 600, marginTop: 4, fontFamily: "monospace" }}>{quote.ref}</div>
+              <div style={{ display: "inline-block", background: brand.amber, color: brand.dark, fontSize: 11, fontWeight: 700, padding: "2px 10px", borderRadius: 4, marginTop: 6 }}>
+                Rev. {quote.revision}
+              </div>
             </div>
           </div>
-          <div style={{ textAlign: "right" }}>
-            <div style={{ color: "#fff", fontSize: 26, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase" }}>Quotation</div>
-            <div style={{ color: brand.amber, fontSize: 14, fontWeight: 600, marginTop: 4, fontFamily: "monospace" }}>{quote.ref}</div>
-            <div style={{ display: "inline-block", background: brand.amber, color: brand.dark, fontSize: 11, fontWeight: 700, padding: "2px 10px", borderRadius: 4, marginTop: 6 }}>
-              Rev. {quote.revision}
-            </div>
+
+          {/* Divider */}
+          <div style={{ borderTop: "1px solid rgba(255,255,255,.15)", margin: "14px 0 10px" }} />
+
+          {/* Contact strip */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "3px 24px", fontSize: 10.5, color: "#8aa0b8", lineHeight: 1.75 }}>
+            <span>📍 {COMPANY.address}</span>
+            <span>✉ {COMPANY.email} · {COMPANY.email2}</span>
+            <span>📞 Dir/Tech: {COMPANY.phone_dir_tech} · Commercial: {COMPANY.phone_commercial}</span>
+            <span>🌐 {COMPANY.web} · ☎ {COMPANY.landline}</span>
+            <span style={{ color: "#FFB347" }}>GSTIN: {COMPANY.gstin}</span>
+            <span style={{ color: "#FFB347" }}>{COMPANY.iso} Certified</span>
           </div>
+        </div>
+
+        {/* Partners strip */}
+        <div style={{ background: "#f0f4f8", borderBottom: `1px solid ${brand.line}`, padding: "7px 28px", display: "flex", alignItems: "center", gap: 8, fontSize: 10.5, color: "#4a6278" }}>
+          <span style={{ fontWeight: 700, color: "#152233", marginRight: 4, flexShrink: 0 }}>Authorised Channel Partner:</span>
+          <span>{COMPANY.partners}</span>
         </div>
 
         {/* Meta row */}
@@ -248,9 +270,14 @@ export default function QuotePrint({ quote, account, contact, site, lines, revis
         </div>
 
         {/* Footer */}
-        <div style={{ background: brand.bg2, borderTop: `1px solid ${brand.line}`, padding: "10px 28px", display: "flex", justifyContent: "space-between", fontSize: 10.5, color: "#8a96a5" }}>
-          <span>{COMPANY.name} · GSTIN {COMPANY.gstin}</span>
-          <span>{quote.ref} · Rev. {quote.revision} · Generated {fmtDate(new Date().toISOString())}</span>
+        <div style={{ background: brand.dark, borderTop: `2px solid #E65C00`, padding: "10px 28px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 10.5 }}>
+            <span style={{ color: "#FFB347", fontStyle: "italic", fontWeight: 500 }}>{COMPANY.footer_tagline}</span>
+            <span style={{ color: "#8aa0b8" }}>{quote.ref} · Rev. {quote.revision} · {fmtDate(new Date().toISOString())}</span>
+          </div>
+          <div style={{ color: "#5a7494", fontSize: 10, marginTop: 4, textAlign: "center" }}>
+            {COMPANY.name} · GSTIN: {COMPANY.gstin} · {COMPANY.web}
+          </div>
         </div>
 
       </div>

@@ -101,12 +101,20 @@ export const WORKSPACE_NAME = "Vikas Pioneers workspace";
 
 // Company details — used in PDF headers and footers.
 export const COMPANY = {
-  name: "Vikas Pioneers India Pvt Ltd",
+  name: "VIKAS PIONEERS [INDIA] PVT. LTD.",
   shortName: "Vikas Pioneers",
-  tagline: "Authorised Service Centre — Crompton Greaves · Marathon Electric · Rotomotive",
-  address: "Industrial Area, Hosapete — 583 201, Karnataka, India",
-  phone: "+91 8394 220 145",
-  email: "service@vikaspioneers.com",
-  gstin: "29AABCV1234K1ZX",
-  pan: "AABCV1234K",
+  tagline: "Professional in Motor Rewindings",
+  undertaking: "Rewinding of LT / HT Large Motors · Drives Application Motors · DC Motors · Transformers & Hydro Gensets",
+  address: "Plot No: N3-N4/1, Industrial Estate, Dam Road, Hosapete - 583201, Vijayanagara (Dist), Karnataka.",
+  phone_dir_tech: "9342681227 / 9538884600",
+  phone_commercial: "9538884603",
+  phone_work: "9538884602",
+  landline: "08394-231687",
+  email: "vikaspioneers@gmail.com",
+  email2: "vew@vikaspioneers.com",
+  web: "www.vikaspioneers.com",
+  gstin: "29AHHPG0831F1ZN",
+  iso: "ISO 9001:2015",
+  partners: "ABB · WEG · SIEMENS · Kirloskar · Jyoti Ltd. · Marathon",
+  footer_tagline: "Assuring our best services as always!",
 } as const;
