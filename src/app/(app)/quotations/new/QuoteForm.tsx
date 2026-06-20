@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useTransition } from "react";
 import Link from "next/link";
 import { c, pillar, type PillarKey } from "@/lib/theme";
 import { cardStyle } from "@/components/Shell";
@@ -95,7 +95,9 @@ export default function QuoteForm({ accounts, contacts, assets, pricingItems, te
   const [catalogTarget, setCatalogTarget] = useState<string | null>(null);
   const [catalogCat, setCatalogCat]       = useState<PricingCategory | "">("");
   const [fragTarget, setFragTarget]       = useState<"notes" | "terms" | null>(null);
-  const [saved, setSaved]                 = useState(false);
+  const [savedId, setSavedId]             = useState<string | null>(null);
+  const [saveError, setSaveError]         = useState("");
+  const [savePending, startSave]          = useTransition();
 
   const quoteRef = useMemo(() => {
     const n = 160 + Math.floor(Math.random() * 30);
@@ -165,19 +167,42 @@ export default function QuoteForm({ accounts, contacts, assets, pricingItems, te
   const noteFrags  = textFragments.filter((f) => f.category === "notes");
   const termsFrags = textFragments.filter((f) => f.category === "terms");
 
+  function handleSave() {
+    setSaveError("");
+    startSave(async () => {
+      const res = await fetch("/api/quotes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          account_id: accountId,
+          ref: quoteRef,
+          total,
+          valid_until: null,
+          notes,
+          terms,
+          lines,
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok) { setSaveError(json.error ?? "Save failed"); return; }
+      setSavedId(json.id);
+    });
+  }
+
   // ── Success screen ────────────────────────────────────────────────────────
-  if (saved) {
+  if (savedId) {
     return (
       <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "55vh", gap: 14, textAlign: "center" }}>
         <div style={{ width: 64, height: 64, borderRadius: "50%", background: pillar.green.bg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28, color: pillar.green.base }}>✓</div>
         <div style={{ fontSize: 20, fontWeight: 700, color: c.ink }}>Draft saved</div>
         <div style={{ fontFamily: "monospace", fontSize: 15, color: c.accent, background: c.accentbg, padding: "6px 16px", borderRadius: 8 }}>{quoteRef}</div>
         <p style={{ fontSize: 13, color: c.muted, maxWidth: 340, lineHeight: 1.6 }}>
-          Saved as draft for {selectedAccount?.name ?? "the customer"}. You can review and send it from the quotations list.
+          Saved as draft for {selectedAccount?.name ?? "the customer"}.
         </p>
         <div style={{ display: "flex", gap: 10, marginTop: 8 }}>
           <Link href={ROUTES.quotations} style={{ background: c.accent, color: "#fff", padding: "8px 20px", borderRadius: 8, textDecoration: "none", fontSize: 13, fontWeight: 600 }}>All quotations</Link>
-          <button onClick={() => setSaved(false)} style={{ border: `1px solid ${c.line}`, background: c.panel, color: c.muted, padding: "8px 20px", borderRadius: 8, fontSize: 13, cursor: "pointer" }}>Edit again</button>
+          <Link href={ROUTES.quotationPrint(savedId)} target="_blank" style={{ background: pillar.teal.bg, color: pillar.teal.fg, padding: "8px 20px", borderRadius: 8, textDecoration: "none", fontSize: 13, fontWeight: 600 }}>🖨 Preview PDF</Link>
+          <button onClick={() => setSavedId(null)} style={{ border: `1px solid ${c.line}`, background: c.panel, color: c.muted, padding: "8px 20px", borderRadius: 8, fontSize: 13, cursor: "pointer" }}>Edit again</button>
         </div>
       </div>
     );
@@ -550,10 +575,10 @@ export default function QuoteForm({ accounts, contacts, assets, pricingItems, te
           <section style={cardStyle}>
             <h3 style={sectionTitle}>Actions</h3>
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              <button onClick={() => setSaved(true)} disabled={!accountId} style={{ width: "100%", padding: "10px 0", borderRadius: 9, fontSize: 13.5, fontWeight: 700, background: accountId ? c.accent : c.line, color: accountId ? "#fff" : c.hint, border: "none", cursor: accountId ? "pointer" : "not-allowed" }}>
-                Save as draft
+              {saveError && <div style={{ fontSize: 12, color: "#dc2626", background: "#fef2f2", borderRadius: 7, padding: "6px 10px" }}>{saveError}</div>}
+              <button onClick={handleSave} disabled={!accountId || savePending} style={{ width: "100%", padding: "10px 0", borderRadius: 9, fontSize: 13.5, fontWeight: 700, background: accountId ? c.accent : c.line, color: accountId ? "#fff" : c.hint, border: "none", cursor: accountId && !savePending ? "pointer" : "not-allowed" }}>
+                {savePending ? "Saving…" : "Save as draft"}
               </button>
-              <button disabled style={{ width: "100%", padding: "9px 0", borderRadius: 9, fontSize: 13, fontWeight: 600, background: pillar.teal.bg, color: pillar.teal.fg, border: "none", cursor: "not-allowed", opacity: 0.7 }}>Preview PDF · Coming soon</button>
               <button disabled style={{ width: "100%", padding: "9px 0", borderRadius: 9, fontSize: 13, fontWeight: 600, background: c.panel2, color: c.muted, border: `1px solid ${c.line}`, cursor: "not-allowed", opacity: 0.7 }}>Send to customer · Coming soon</button>
             </div>
           </section>

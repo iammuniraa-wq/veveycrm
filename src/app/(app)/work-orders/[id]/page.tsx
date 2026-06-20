@@ -5,7 +5,7 @@ import { c, pillar, type PillarKey } from "@/lib/theme";
 import { cardStyle } from "@/components/Shell";
 import PageHeader from "@/components/PageHeader";
 import Pill from "@/components/Pill";
-import ComingSoon from "@/components/ComingSoon";
+import WorkOrderActions from "./WorkOrderActions";
 import { ROUTES } from "@/lib/constants";
 import type { WorkOrderStatus } from "@/lib/types";
 
@@ -65,17 +65,8 @@ export default async function WorkOrderDetailPage({
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 14 }}>
         <Pill label={STATUS_LABEL[wo.status]} tone={STATUS_TONE[wo.status]} />
         <Pill label={wo.authorized_by.kind === "quote" ? "Billable" : "AMC"} tone={wo.authorized_by.kind === "quote" ? "blue" : "teal"} />
-        <div style={{ marginLeft: "auto", display: "flex", gap: 8, flexWrap: "wrap" }}>
-          {(wo.status === "scheduled" || wo.status === "in_progress") && (
-            <span style={{ display: "inline-flex", alignItems: "center", gap: 5, background: pillar.teal.bg, color: pillar.teal.fg, borderRadius: 7, padding: "6px 12px", fontSize: 12.5, fontWeight: 500, cursor: "not-allowed" }}>
-              Check Complete <ComingSoon size="xs" />
-            </span>
-          )}
-          {wo.status === "completed" && (
-            <span style={{ display: "inline-flex", alignItems: "center", gap: 5, background: pillar.green.bg, color: pillar.green.fg, borderRadius: 7, padding: "6px 12px", fontSize: 12.5, fontWeight: 500, cursor: "not-allowed" }}>
-              Raise Invoice <ComingSoon size="xs" />
-            </span>
-          )}
+        <div style={{ marginLeft: "auto" }}>
+          <WorkOrderActions id={wo.id} status={wo.status} />
         </div>
       </div>
 
