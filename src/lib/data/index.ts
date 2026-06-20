@@ -3,7 +3,7 @@
 // only this file. (isSupabaseConfigured() gate added when the project exists.)
 
 import * as seed from "./seed";
-import type { Account, Asset, Contact, Quote, QuoteLine, ServiceCase, CaseStatus, WorkOrder, Technician, TechnicianLeave, VisitLog, VisitStatus, PricingItem, TextFragment } from "@/lib/types";
+import type { Account, Asset, Contact, Quote, QuoteLine, ServiceCase, CaseStatus, WorkOrder, Technician, TechnicianLeave, VisitLog, VisitStatus, PricingItem, TextFragment, Lead, Invoice, Activity } from "@/lib/types";
 
 export type AccountSummary = {
   account: Account;
@@ -541,5 +541,182 @@ export async function getQuoteFormData() {
     assets:        seed.assets.filter((a) => a.account_id !== null), // customer-owned only
     pricingItems:  seed.pricingItems,
     textFragments: seed.textFragments,
+  };
+}
+
+// ── Analytics ─────────────────────────────────────────────────────────────────
+
+export type AnalyticsData = {
+  totals: {
+    accounts: number;
+    contacts: number;
+    customerAssets: number;
+    openCases: number;
+    workOrders: number;
+    activeContracts: number;
+    leads: number;
+    technicians: number;
+  };
+  accountsByType: Array<{ type: string; label: string; count: number }>;
+  leadFunnel: Array<{ stage: string; count: number }>;
+  assetsByKind: Array<{ kind: string; label: string; count: number; loanerCount: number }>;
+  loanerStock: { available: number; onLoan: number; total: number };
+  quotesByStatus: Array<{ status: string; label: string; count: number; value: number }>;
+  quoteTrend: Array<{ dateLabel: string; value: number; cumulative: number }>;
+  casesByStatus: Array<{ status: string; label: string; count: number }>;
+  workOrdersByStatus: Array<{ status: string; label: string; count: number }>;
+  techniciansByStatus: Array<{ status: string; label: string; count: number }>;
+  invoicesByStatus: Array<{ status: string; label: string; count: number; value: number }>;
+  contractStats: { activeCount: number; totalValue: number };
+  recentActivity: Array<{ text: string; at: string; pillar: Activity["pillar"]; accountName: string }>;
+};
+
+export async function getAnalyticsData(): Promise<AnalyticsData> {
+  const accountById = new Map(seed.accounts.map((a) => [a.id, a]));
+
+  // Totals
+  const totals = {
+    accounts:       seed.accounts.length,
+    contacts:       seed.contacts.length,
+    customerAssets: seed.assets.filter((a) => !a.is_loaner).length,
+    openCases:      seed.serviceCases.filter((sc) => OPEN_CASE_STATUSES.includes(sc.status)).length,
+    workOrders:     seed.workOrders.length,
+    activeContracts: seed.contracts.filter((c) => c.status === "active").length,
+    leads:          seed.leads.length,
+    technicians:    seed.technicians.length,
+  };
+
+  // Accounts by type
+  const accountTypeCounts = new Map<string, number>();
+  seed.accounts.forEach((a) => accountTypeCounts.set(a.type, (accountTypeCounts.get(a.type) ?? 0) + 1));
+  const accountsByType = [
+    { type: "oem",          label: "OEM / Vendor",    count: accountTypeCounts.get("oem")          ?? 0 },
+    { type: "direct",       label: "Direct customer", count: accountTypeCounts.get("direct")       ?? 0 },
+    { type: "end_customer", label: "End-customer",    count: accountTypeCounts.get("end_customer") ?? 0 },
+    { type: "prospect",     label: "Prospect",        count: accountTypeCounts.get("prospect")     ?? 0 },
+  ].filter((x) => x.count > 0);
+
+  // Lead funnel (cumulative pipeline stages)
+  const leadStatusOrder: Lead["status"][] = ["new", "inspecting", "quoted", "won"];
+  const leadCounts = new Map<string, number>();
+  seed.leads.forEach((l) => leadCounts.set(l.status, (leadCounts.get(l.status) ?? 0) + 1));
+  const total_leads = seed.leads.length;
+  const engaged = seed.leads.filter((l) => l.status !== "new" && l.status !== "lost").length;
+  const qualified = seed.leads.filter((l) => l.status === "quoted" || l.status === "won").length;
+  const won_count = leadCounts.get("won") ?? 0;
+  const leadFunnel = [
+    { stage: "All leads",       count: total_leads },
+    { stage: "Engaged",         count: engaged     },
+    { stage: "Quoted",          count: qualified   },
+    { stage: "Won",             count: won_count   },
+  ];
+
+  // Assets by kind
+  const assetKinds: Asset["kind"][] = ["motor", "transformer", "pump", "generator", "panel"];
+  const assetKindLabels: Record<Asset["kind"], string> = {
+    motor: "Motor", transformer: "Transformer", pump: "Pump", generator: "Generator", panel: "Panel",
+  };
+  const assetsByKind = assetKinds
+    .map((k) => ({
+      kind:        k,
+      label:       assetKindLabels[k],
+      count:       seed.assets.filter((a) => a.kind === k && !a.is_loaner).length,
+      loanerCount: seed.assets.filter((a) => a.kind === k && a.is_loaner).length,
+    }))
+    .filter((x) => x.count + x.loanerCount > 0);
+
+  // Loaner stock
+  const loaners = seed.assets.filter((a) => a.is_loaner);
+  const loanerStock = {
+    total:     loaners.length,
+    available: loaners.filter((a) => a.loaner_status === "available").length,
+    onLoan:    loaners.filter((a) => a.loaner_status === "on_loan").length,
+  };
+
+  // Quotes by status + trend
+  const qStatusCounts = new Map<string, { count: number; value: number }>();
+  seed.quotes.forEach((q) => {
+    const s = qStatusCounts.get(q.status) ?? { count: 0, value: 0 };
+    qStatusCounts.set(q.status, { count: s.count + 1, value: s.value + q.total });
+  });
+  const quotesByStatus = [
+    { status: "draft",    label: "Draft",    ...(qStatusCounts.get("draft")    ?? { count: 0, value: 0 }) },
+    { status: "sent",     label: "Sent",     ...(qStatusCounts.get("sent")     ?? { count: 0, value: 0 }) },
+    { status: "approved", label: "Approved", ...(qStatusCounts.get("approved") ?? { count: 0, value: 0 }) },
+    { status: "rejected", label: "Rejected", ...(qStatusCounts.get("rejected") ?? { count: 0, value: 0 }) },
+  ].filter((x) => x.count > 0);
+
+  const sortedQuotes = seed.quotes.slice().sort((a, b) => a.created_at.localeCompare(b.created_at));
+  let cumulative = 0;
+  const quoteTrend = sortedQuotes.map((q) => {
+    cumulative += q.total;
+    const d = new Date(q.created_at);
+    return {
+      dateLabel: d.toLocaleDateString("en-IN", { day: "numeric", month: "short" }),
+      value:     q.total,
+      cumulative,
+    };
+  });
+
+  // Cases by status
+  const caseStatusCounts = new Map<string, number>();
+  seed.serviceCases.forEach((sc) => caseStatusCounts.set(sc.status, (caseStatusCounts.get(sc.status) ?? 0) + 1));
+  const casesByStatus = Array.from(caseStatusCounts.entries())
+    .map(([status, count]) => ({ status, label: CASE_STATUS_LABEL[status as CaseStatus] ?? status, count }))
+    .sort((a, b) => b.count - a.count);
+
+  // Work orders by status
+  const woStatusCounts = new Map<string, number>();
+  seed.workOrders.forEach((wo) => woStatusCounts.set(wo.status, (woStatusCounts.get(wo.status) ?? 0) + 1));
+  const workOrdersByStatus = [
+    { status: "scheduled",   label: "Scheduled",   count: woStatusCounts.get("scheduled")   ?? 0 },
+    { status: "in_progress", label: "In Progress",  count: woStatusCounts.get("in_progress") ?? 0 },
+    { status: "completed",   label: "Completed",   count: woStatusCounts.get("completed")   ?? 0 },
+  ].filter((x) => x.count > 0);
+
+  // Technicians by status
+  const techStatusCounts = new Map<string, number>();
+  seed.technicians.forEach((t) => techStatusCounts.set(t.status, (techStatusCounts.get(t.status) ?? 0) + 1));
+  const techniciansByStatus = [
+    { status: "active",   label: "Active",    count: techStatusCounts.get("active")   ?? 0 },
+    { status: "on_leave", label: "On Leave",  count: techStatusCounts.get("on_leave") ?? 0 },
+    { status: "inactive", label: "Inactive",  count: techStatusCounts.get("inactive") ?? 0 },
+  ].filter((x) => x.count > 0);
+
+  // Invoices by status
+  const invStatusCounts = new Map<string, { count: number; value: number }>();
+  seed.invoices.forEach((inv) => {
+    const s = invStatusCounts.get(inv.status) ?? { count: 0, value: 0 };
+    invStatusCounts.set(inv.status, { count: s.count + 1, value: s.value + inv.total });
+  });
+  const invoicesByStatus = [
+    { status: "draft", label: "Draft", ...(invStatusCounts.get("draft") ?? { count: 0, value: 0 }) },
+    { status: "sent",  label: "Sent",  ...(invStatusCounts.get("sent")  ?? { count: 0, value: 0 }) },
+    { status: "paid",  label: "Paid",  ...(invStatusCounts.get("paid")  ?? { count: 0, value: 0 }) },
+  ].filter((x) => x.count > 0);
+
+  // Contract stats
+  const activeContracts = seed.contracts.filter((c) => c.status === "active");
+  const contractStats = {
+    activeCount: activeContracts.length,
+    totalValue:  activeContracts.reduce((s, c) => s + c.value, 0),
+  };
+
+  // Recent activity
+  const recentActivity = seed.activities
+    .slice()
+    .sort((a, b) => +new Date(b.at) - +new Date(a.at))
+    .slice(0, 6)
+    .map((act) => ({
+      text:        act.text,
+      at:          act.at,
+      pillar:      act.pillar,
+      accountName: accountById.get(act.account_id)?.name ?? act.account_id,
+    }));
+
+  return {
+    totals, accountsByType, leadFunnel, assetsByKind, loanerStock,
+    quotesByStatus, quoteTrend, casesByStatus, workOrdersByStatus,
+    techniciansByStatus, invoicesByStatus, contractStats, recentActivity,
   };
 }
