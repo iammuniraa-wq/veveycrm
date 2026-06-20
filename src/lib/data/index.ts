@@ -3,7 +3,7 @@
 // only this file. (isSupabaseConfigured() gate added when the project exists.)
 
 import * as seed from "./seed";
-import type { Account, Asset, Contact, Quote, ServiceCase, CaseStatus, WorkOrder, Technician, TechnicianLeave, VisitLog, VisitStatus } from "@/lib/types";
+import type { Account, Asset, Contact, Quote, ServiceCase, CaseStatus, WorkOrder, Technician, TechnicianLeave, VisitLog, VisitStatus, PricingItem, TextFragment } from "@/lib/types";
 
 export type AccountSummary = {
   account: Account;
@@ -507,4 +507,30 @@ export async function getTechnicianDetail(techId: string, yearMonth: string) {
   })();
 
   return { technician: tech, calendarDays, leaves, recentVisits, upcomingWOs, monthStats };
+}
+
+// ── Pricing & Fragments ───────────────────────────────────────────────────────
+
+export const PRICING_CATEGORY_LABEL: Record<PricingItem["category"], string> = {
+  labour:    "Labour",
+  material:  "Materials",
+  testing:   "Testing & Certification",
+  transport: "Transport & Logistics",
+};
+
+export async function listPricingItems(): Promise<PricingItem[]> {
+  return seed.pricingItems;
+}
+
+export async function listTextFragments(): Promise<TextFragment[]> {
+  return seed.textFragments;
+}
+
+export async function getQuoteFormData() {
+  return {
+    accounts:      seed.accounts,
+    contacts:      seed.contacts,
+    pricingItems:  seed.pricingItems,
+    textFragments: seed.textFragments,
+  };
 }

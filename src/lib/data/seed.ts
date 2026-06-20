@@ -5,6 +5,7 @@
 import type {
   Account, Contact, Site, Asset, Contract, Lead, Quote, QuoteLine, QuoteRevision,
   WorkOrder, Invoice, Technician, TechnicianLeave, VisitLog, Activity, ServiceCase, CasePhoto, InspectionReport,
+  PricingItem, TextFragment,
 } from "@/lib/types";
 
 export const technicians: Technician[] = [
@@ -365,4 +366,84 @@ export const inspectionReports: InspectionReport[] = [
     sent_at: "2026-06-15T16:30:00",
     approved_at: null,
   },
+];
+
+// ── Pricing catalog ────────────────────────────────────────────────────────────
+
+export const pricingItems: PricingItem[] = [
+  // Labour
+  { id: "pr_l1",  category: "labour",    description: "Motor rewinding — up to 30 kW (415V, 3-phase)",               unit: "per job",     rate: 18000, notes: "Includes stator strip, rewind, varnish, oven bake, no-load test" },
+  { id: "pr_l2",  category: "labour",    description: "Motor rewinding — 31–75 kW (415V, 3-phase)",                  unit: "per job",     rate: 32000, notes: "Includes Class F insulation, SKF/FAG bearings optional" },
+  { id: "pr_l3",  category: "labour",    description: "Motor rewinding — 76–150 kW (415V, 3-phase)",                 unit: "per job",     rate: 52000, notes: null },
+  { id: "pr_l4",  category: "labour",    description: "Motor rewinding — above 150 kW (HT/LT)",                      unit: "per job",     rate: 85000, notes: "Rate subject to coil design complexity" },
+  { id: "pr_l5",  category: "labour",    description: "Bearing replacement — DE & NDE set",                           unit: "per set",     rate: 4500,  notes: "Labour only; bearing cost extra" },
+  { id: "pr_l6",  category: "labour",    description: "Pump overhaul — mechanical seal, impeller, casing inspection", unit: "per job",     rate: 14000, notes: null },
+  { id: "pr_l7",  category: "labour",    description: "Panel wiring & commissioning",                                  unit: "per job",     rate: 8000,  notes: null },
+  { id: "pr_l8",  category: "labour",    description: "Transformer oil replacement & servicing",                       unit: "per job",     rate: 6500,  notes: "Oil cost billed separately" },
+  { id: "pr_l9",  category: "labour",    description: "Onsite service visit — half day (up to 4 hours)",               unit: "per visit",   rate: 4500,  notes: "Within 50 km of Hosapete" },
+  { id: "pr_l10", category: "labour",    description: "Onsite service visit — full day (up to 8 hours)",               unit: "per visit",   rate: 7500,  notes: "Within 50 km of Hosapete" },
+  { id: "pr_l11", category: "labour",    description: "Emergency callout — after hours / weekend",                     unit: "per callout", rate: 12000, notes: "Applies outside 9 AM–6 PM Mon–Sat" },
+  { id: "pr_l12", category: "labour",    description: "Dynamic rotor balancing — IS 11723 G2.5",                       unit: "per job",     rate: 18000, notes: null },
+
+  // Materials
+  { id: "pr_m1",  category: "material",  description: "Copper wire — Class F (IS 13730)",                             unit: "per kg",      rate: 850,   notes: "Rate subject to copper market price" },
+  { id: "pr_m2",  category: "material",  description: "HT insulation paper (IS 1576)",                                unit: "per sheet",   rate: 420,   notes: null },
+  { id: "pr_m3",  category: "material",  description: "SKF/FAG bearing — 6315 (DE, standard)",                        unit: "per piece",   rate: 4200,  notes: null },
+  { id: "pr_m4",  category: "material",  description: "Toller/SKF bearing — NU 2320 (heavy duty)",                    unit: "per piece",   rate: 5800,  notes: null },
+  { id: "pr_m5",  category: "material",  description: "Class F varnish — alkyd resin (IS 1866)",                      unit: "per litre",   rate: 680,   notes: null },
+  { id: "pr_m6",  category: "material",  description: "Transformer oil — IS 335 grade",                               unit: "per litre",   rate: 280,   notes: null },
+  { id: "pr_m7",  category: "material",  description: "Labyrinth seal kit (complete)",                                 unit: "per set",     rate: 1200,  notes: null },
+  { id: "pr_m8",  category: "material",  description: "Slot liner & wedge material",                                   unit: "per set",     rate: 950,   notes: null },
+
+  // Testing
+  { id: "pr_t1",  category: "testing",   description: "No-load & full-load test with certificate (IS 325)",            unit: "per test",    rate: 5200,  notes: "Includes test report, signed certificate" },
+  { id: "pr_t2",  category: "testing",   description: "HV withstand test — 1500V / 1 min (IS 2148)",                  unit: "per test",    rate: 3500,  notes: "HV certificate issued on pass" },
+  { id: "pr_t3",  category: "testing",   description: "Dissolved Gas Analysis (DGA) — IEC 60599",                     unit: "per sample",  rate: 4800,  notes: "H2, CH4, C2H2, C2H4, C2H6 gases reported" },
+  { id: "pr_t4",  category: "testing",   description: "Insulation resistance (Megger) — 500V / 1000V",                 unit: "per test",    rate: 800,   notes: null },
+  { id: "pr_t5",  category: "testing",   description: "Vibration analysis & report — ISO 10816",                       unit: "per test",    rate: 3200,  notes: null },
+  { id: "pr_t6",  category: "testing",   description: "Thermography scan — Level I report",                            unit: "per scan",    rate: 2800,  notes: null },
+  { id: "pr_t7",  category: "testing",   description: "Dielectric strength test (oil) — IS 6792",                      unit: "per test",    rate: 1800,  notes: "Test at 50 kV, pass limit 40 kV" },
+
+  // Transport
+  { id: "pr_tr1", category: "transport", description: "Local pickup & delivery — within Hosapete",                     unit: "per trip",    rate: 8000,  notes: "Includes loading/unloading" },
+  { id: "pr_tr2", category: "transport", description: "Long-distance transport — per km (one way)",                    unit: "per km",      rate: 45,    notes: "Minimum 100 km billing" },
+  { id: "pr_tr3", category: "transport", description: "Crane hire — for heavy motors (>500 kg)",                       unit: "per day",     rate: 6500,  notes: "½-day minimum billing" },
+];
+
+// ── Text fragments ──────────────────────────────────────────────────────────────
+
+export const textFragments: TextFragment[] = [
+  // Line item descriptions
+  { id: "fr_li1", category: "line_item", label: "Full motor rewind scope",
+    text: "Full stator rewind in Class F / Class H insulation. Strip and clean stator slots. Replace DE & NDE bearings (SKF/FAG). Varnish treatment and oven bake. No-load and full-load test with certificate. Phase-failure relay recommendation in handover note." },
+  { id: "fr_li2", category: "line_item", label: "Bearing replacement scope",
+    text: "Replace drive-end (DE) and non-drive-end (NDE) bearings (SKF/FAG/Toller). Clean and degrease bearing housings. Apply fresh high-temperature grease. Reassemble, align, and test run. Vibration and temperature check post-assembly." },
+  { id: "fr_li3", category: "line_item", label: "AMC site visit scope",
+    text: "Scheduled AMC preventive maintenance visit. Visual inspection of equipment condition, cleaning of cooling fins and terminal box, lubrication of bearings, insulation resistance check, parameter recording (current, voltage, temperature). Service report submitted on completion." },
+  { id: "fr_li4", category: "line_item", label: "Transformer oil service scope",
+    text: "Drain and replace transformer oil (IS 335 grade). Clean conservator and buchholz relay. Perform dielectric strength test on new oil. Top up to rated level. Visual inspection of bushings, radiators, and gaskets. Issue oil test certificate." },
+  { id: "fr_li5", category: "line_item", label: "Pump overhaul scope",
+    text: "Disassemble pump. Replace mechanical seal, impeller wear rings, and shaft sleeve. Inspect casing for cavitation damage. Reassemble and align to motor. Run test and record flow / pressure / power consumption. Issue overhaul report." },
+
+  // Notes
+  { id: "fr_n1", category: "notes", label: "Copper rate clause",
+    text: "Note: Quoted price is based on copper at ₹750/kg. If copper rate exceeds ₹750/kg at time of rewinding, a material surcharge of ₹1,500 per kW will apply and will be intimated before commencement of work." },
+  { id: "fr_n2", category: "notes", label: "Standard warranty",
+    text: "Warranty: 12 months on rewinding workmanship from date of dispatch. Warranty is void if the motor is operated with a defective overload relay, on unbalanced/fluctuating supply, or subjected to single-phasing without protection." },
+  { id: "fr_n3", category: "notes", label: "Transport note",
+    text: "Transport charges above are for local Hosapete pickup and delivery only. For outstation sites, freight charges will be at actuals by road transport and will be added to the final invoice." },
+  { id: "fr_n4", category: "notes", label: "Loaner motor note",
+    text: "A loaner motor will be provided during the repair period subject to availability. Loaner unit remains the property of Vikas Pioneers India Pvt Ltd and must be returned in good condition on delivery of the repaired unit." },
+  { id: "fr_n5", category: "notes", label: "Priority job note",
+    text: "This job has been flagged as PRIORITY by the customer. We will endeavour to complete and dispatch within the agreed timeline. Any delays due to non-availability of materials will be communicated immediately." },
+
+  // Terms
+  { id: "fr_t1", category: "terms", label: "Standard payment terms",
+    text: "Payment Terms: 50% advance on order confirmation; balance before dispatch. Cheque / NEFT in favour of Vikas Pioneers India Pvt Ltd. GST @ 18% applicable on all services and materials. No dispatch without clearance of balance." },
+  { id: "fr_t2", category: "terms", label: "AMC payment terms",
+    text: "AMC charges are payable quarterly in advance. Failure to pay within 30 days of due date will render the AMC contract void for that quarter. Parts and materials not covered under AMC scope will be charged separately at actuals." },
+  { id: "fr_t3", category: "terms", label: "Standard T&C",
+    text: "1. Prices are ex-works Hosapete unless stated otherwise.\n2. Quotation valid for 30 days from date of issue.\n3. All electrical testing carried out per relevant IS/IEC standards.\n4. Vikas Pioneers is not liable for delays due to non-availability of OEM spares.\n5. Customer must provide safe access for onsite visits; site safety compliance is the customer's responsibility.\n6. Disputes subject to Hosapete jurisdiction only." },
+  { id: "fr_t4", category: "terms", label: "Emergency / callout T&C",
+    text: "Emergency callout charges apply for calls received outside business hours (9 AM–6 PM, Mon–Sat) and on public holidays. Callout fee covers mobilisation only; actual repair/service is billed separately. Minimum billing: 4 hours at applicable labour rate." },
 ];

@@ -236,6 +236,28 @@ export type ServiceCase = {
   notes: string | null;
 };
 
+// ── Pricing catalog & text fragments ─────────────────────────────────────────
+
+export type PricingCategory = "labour" | "material" | "testing" | "transport";
+
+export type PricingItem = {
+  id: string;
+  category: PricingCategory;
+  description: string;
+  unit: string;
+  rate: number;
+  notes: string | null;
+};
+
+export type FragmentCategory = "line_item" | "notes" | "terms";
+
+export type TextFragment = {
+  id: string;
+  label: string;
+  category: FragmentCategory;
+  text: string;
+};
+
 export type CasePhoto = {
   id: string;
   case_id: string;
