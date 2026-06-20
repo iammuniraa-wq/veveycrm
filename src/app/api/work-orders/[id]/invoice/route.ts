@@ -1,21 +1,27 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { createServerSupabase } from "@/lib/supabase-server";
+import { requireTenantUser } from "@/lib/supabase-server";
 
 export async function POST(_: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const supabase = await createServerSupabase();
+  let supabase, tenantId;
+  try {
+    ({ supabase, tenantId } = await requireTenantUser());
+  } catch (e: unknown) {
+    const err = e as { status: number; message: string };
+    return NextResponse.json({ error: err.message }, { status: err.status });
+  }
+
   const { id } = await params;
 
-  // Load the work order
   const { data: wo, error: woErr } = await supabase
     .from("work_orders")
     .select("*, account_id, ref, status, authorized_by")
     .eq("id", id)
+    .eq("tenant_id", tenantId)
     .single();
 
   if (woErr || !wo) return NextResponse.json({ error: "Work order not found" }, { status: 404 });
   if (wo.status !== "completed") return NextResponse.json({ error: "Work order must be completed first" }, { status: 400 });
 
-  // Derive total from linked quote lines if billable
   let total = 0;
   if (wo.authorized_by?.kind === "quote" && wo.authorized_by?.id) {
     const { data: lines } = await supabase
@@ -30,6 +36,7 @@ export async function POST(_: NextRequest, { params }: { params: Promise<{ id: s
   const { data: invoice, error: invErr } = await supabase
     .from("invoices")
     .insert({
+      tenant_id: tenantId,
       account_id: wo.account_id,
       ref: invoiceRef,
       work_order_id: id,
@@ -42,8 +49,7 @@ export async function POST(_: NextRequest, { params }: { params: Promise<{ id: s
 
   if (invErr) return NextResponse.json({ error: invErr.message }, { status: 500 });
 
-  // Mark work order as invoiced
-  await supabase.from("work_orders").update({ status: "invoiced" }).eq("id", id);
+  await supabase.from("work_orders").update({ status: "invoiced" }).eq("id", id).eq("tenant_id", tenantId);
 
   return NextResponse.json({ id: invoice.id, ref: invoice.ref }, { status: 201 });
 }

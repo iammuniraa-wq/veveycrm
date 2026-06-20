@@ -2,6 +2,10 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createAdminSupabase } from "@/lib/supabase-server";
 
 export async function GET(request: NextRequest) {
+  if (process.env.NODE_ENV === "production") {
+    return new NextResponse("Not found", { status: 404 });
+  }
+
   const admin = createAdminSupabase();
 
   const { data, error } = await admin.auth.admin.generateLink({

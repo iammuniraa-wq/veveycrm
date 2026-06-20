@@ -1,29 +1,47 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { createServerSupabase } from "@/lib/supabase-server";
+import { requireTenantUser } from "@/lib/supabase-server";
 
 export async function GET() {
-  const supabase = await createServerSupabase();
+  let supabase, tenantId;
+  try {
+    ({ supabase, tenantId } = await requireTenantUser());
+  } catch (e: unknown) {
+    const err = e as { status: number; message: string };
+    return NextResponse.json({ error: err.message }, { status: err.status });
+  }
+
   const { data, error } = await supabase
     .from("pricing_items")
     .select("*")
+    .eq("tenant_id", tenantId)
     .order("category")
     .order("description");
+
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json(data);
 }
 
 export async function POST(request: NextRequest) {
-  const supabase = await createServerSupabase();
+  let supabase, tenantId;
+  try {
+    ({ supabase, tenantId } = await requireTenantUser());
+  } catch (e: unknown) {
+    const err = e as { status: number; message: string };
+    return NextResponse.json({ error: err.message }, { status: err.status });
+  }
+
   const body = await request.json();
   const { category, description, unit, rate, notes } = body;
   if (!category || !description || !unit) {
     return NextResponse.json({ error: "category, description and unit are required" }, { status: 400 });
   }
+
   const { data, error } = await supabase
     .from("pricing_items")
-    .insert({ category, description, unit, rate: rate ?? 0, notes: notes ?? null })
+    .insert({ tenant_id: tenantId, category, description, unit, rate: rate ?? 0, notes: notes ?? null })
     .select("*")
     .single();
+
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json(data, { status: 201 });
 }

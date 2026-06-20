@@ -1,8 +1,9 @@
 export function checkApiKey(req: Request): boolean {
   const auth = req.headers.get("Authorization") ?? "";
   const provided = auth.startsWith("Bearer ") ? auth.slice(7).trim() : auth.trim();
-  const expected = process.env.VEVEY_API_KEY ?? "dev-key";
-  return provided === expected && provided.length > 0;
+  const expected = process.env.VEVEY_API_KEY;
+  if (!expected) return false; // key not configured — block all access
+  return provided === expected;
 }
 
 export const ERR_401 = () =>

@@ -1,8 +1,15 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { createServerSupabase } from "@/lib/supabase-server";
+import { requireTenantUser } from "@/lib/supabase-server";
 
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const supabase = await createServerSupabase();
+  let supabase, tenantId;
+  try {
+    ({ supabase, tenantId } = await requireTenantUser());
+  } catch (e: unknown) {
+    const err = e as { status: number; message: string };
+    return NextResponse.json({ error: err.message }, { status: err.status });
+  }
+
   const { id } = await params;
   const body = await request.json();
 
@@ -14,6 +21,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     .from("work_orders")
     .update(patch)
     .eq("id", id)
+    .eq("tenant_id", tenantId)
     .select("*")
     .single();
 

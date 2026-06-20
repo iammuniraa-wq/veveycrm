@@ -1,29 +1,47 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { createServerSupabase } from "@/lib/supabase-server";
+import { requireTenantUser } from "@/lib/supabase-server";
 
 export async function GET() {
-  const supabase = await createServerSupabase();
+  let supabase, tenantId;
+  try {
+    ({ supabase, tenantId } = await requireTenantUser());
+  } catch (e: unknown) {
+    const err = e as { status: number; message: string };
+    return NextResponse.json({ error: err.message }, { status: err.status });
+  }
+
   const { data, error } = await supabase
     .from("text_fragments")
     .select("*")
+    .eq("tenant_id", tenantId)
     .order("category")
     .order("label");
+
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json(data);
 }
 
 export async function POST(request: NextRequest) {
-  const supabase = await createServerSupabase();
+  let supabase, tenantId;
+  try {
+    ({ supabase, tenantId } = await requireTenantUser());
+  } catch (e: unknown) {
+    const err = e as { status: number; message: string };
+    return NextResponse.json({ error: err.message }, { status: err.status });
+  }
+
   const body = await request.json();
   const { label, category, text } = body;
   if (!label || !category || !text) {
     return NextResponse.json({ error: "label, category and text are required" }, { status: 400 });
   }
+
   const { data, error } = await supabase
     .from("text_fragments")
-    .insert({ label, category, text })
+    .insert({ tenant_id: tenantId, label, category, text })
     .select("*")
     .single();
+
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json(data, { status: 201 });
 }
