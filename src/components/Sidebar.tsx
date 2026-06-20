@@ -20,14 +20,6 @@ type NavState = {
 
 type FlatItem = NavItem & { group: string };
 
-const PILLAR_COLOR: Record<string, string> = {
-  blue:   "#378ADD",
-  purple: "#7f77dd",
-  teal:   "#1d9e75",
-  amber:  "#f6b23c",
-  red:    "#e05252",
-  green:  "#639922",
-};
 
 function flattenNav(): FlatItem[] {
   return NAV.flatMap((grp) => grp.items.map((item) => ({ ...item, group: grp.group })));
@@ -167,10 +159,6 @@ function DraggableSection({
                 cursor: "default",
               }}
             >
-              <span style={{
-                width: 5, height: 5, borderRadius: "50%", flexShrink: 0,
-                background: on ? "rgba(255,255,255,.6)" : (PILLAR_COLOR[item.pillar] ?? "#378ADD"),
-              }} />
               <span style={{ width: 16, textAlign: "center", fontSize: 14, flexShrink: 0 }}>
                 {item.icon}
               </span>
