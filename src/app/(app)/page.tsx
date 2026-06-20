@@ -59,7 +59,7 @@ export default async function DashboardPage() {
       />
 
       {/* ── KPI strip — every card is clickable ── */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10, marginBottom: 16 }}>
+      <div className="kpi-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10, marginBottom: 16 }}>
         <KpiCard
           href={ROUTES.cases}
           label="Open cases" value={kpis.openCases}
@@ -93,7 +93,7 @@ export default async function DashboardPage() {
       </div>
 
       {/* ── Two-column middle ── */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 280px", gap: 12, marginBottom: 12 }}>
+      <div className="hub-grid" style={{ display: "grid", gridTemplateColumns: "1fr 280px", gap: 12, marginBottom: 12 }}>
 
         {/* Cases needing attention */}
         <section style={cardStyle}>
@@ -121,14 +121,16 @@ export default async function DashboardPage() {
                     <Pill label={info?.label ?? CASE_STATUS_LABEL[sc.status]} tone={info?.tone ?? "blue"} />
                   </div>
                   <div style={{ fontSize: 13, fontWeight: 500, marginBottom: 2 }}>{sc.equipment_label}</div>
-                  {account && (
-                    <Link href={ROUTES.account(account.id)} style={{ fontSize: 12, color: c.muted, textDecoration: "none" }}>
-                      {account.name} →
-                    </Link>
-                  )}
-                  <div style={{ fontSize: 11.5, color: c.hint, marginTop: 3 }}>{info?.action}</div>
+                  <span className="mob-hide">
+                    {account && (
+                      <Link href={ROUTES.account(account.id)} style={{ fontSize: 12, color: c.muted, textDecoration: "none" }}>
+                        {account.name} →
+                      </Link>
+                    )}
+                    <div style={{ fontSize: 11.5, color: c.hint, marginTop: 3 }}>{info?.action}</div>
+                  </span>
                 </div>
-                <Link href={ROUTES.case(sc.id)} style={{
+                <Link className="mob-hide" href={ROUTES.case(sc.id)} style={{
                   fontSize: 12, fontWeight: 600, color: c.accent, textDecoration: "none",
                   background: c.accentbg, borderRadius: 6, padding: "4px 10px", flexShrink: 0,
                 }}>
@@ -169,19 +171,23 @@ export default async function DashboardPage() {
                     </span>
                     <Pill label={WO_STATUS_LABEL[wo.status]} tone={WO_TONE[wo.status]} />
                   </div>
-                  {account && (
-                    <Link href={ROUTES.account(account.id)} style={{ fontSize: 12, color: c.muted, marginTop: 3, display: "block", textDecoration: "none" }}>
-                      {account.name}
+                  <span className="mob-truncate">
+                    {account && (
+                      <Link href={ROUTES.account(account.id)} style={{ fontSize: 12, color: c.muted, marginTop: 3, display: "block", textDecoration: "none" }}>
+                        {account.name}
+                      </Link>
+                    )}
+                  </span>
+                  <span className="mob-hide">
+                    {tech && (
+                      <div style={{ fontSize: 11.5, color: c.hint, marginTop: 1 }}>
+                        {tech.name}{wo.scheduled_for ? " · " + fmtDate(wo.scheduled_for) : ""}
+                      </div>
+                    )}
+                    <Link href={ROUTES.workOrders} style={{ fontSize: 11, color: c.accent, textDecoration: "none", display: "inline-block", marginTop: 4 }}>
+                      View →
                     </Link>
-                  )}
-                  {tech && (
-                    <div style={{ fontSize: 11.5, color: c.hint, marginTop: 1 }}>
-                      {tech.name}{wo.scheduled_for ? " · " + fmtDate(wo.scheduled_for) : ""}
-                    </div>
-                  )}
-                  <Link href={ROUTES.workOrders} style={{ fontSize: 11, color: c.accent, textDecoration: "none", display: "inline-block", marginTop: 4 }}>
-                    View →
-                  </Link>
+                  </span>
                 </div>
               ))}
             </section>
@@ -205,7 +211,7 @@ export default async function DashboardPage() {
             <ActivityDot pillar={activity.pillar} />
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: 12.5, color: c.ink }}>{activity.text}</div>
-              <div style={{ fontSize: 11.5, marginTop: 3, display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+              <div className="mob-hide" style={{ fontSize: 11.5, marginTop: 3, display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
                 {account ? (
                   <Link href={ROUTES.account(account.id)} style={{ color: c.accent, textDecoration: "none", fontWeight: 500 }}>
                     {account.name}
@@ -241,7 +247,7 @@ function KpiCard({
           {value}
         </div>
         <div style={{ fontSize: 12.5, fontWeight: 600, color: p.fg, marginTop: 5 }}>{label}</div>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 6 }}>
+        <div className="mob-hide" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 6 }}>
           <span style={{ fontSize: 11, color: p.fg, opacity: 0.6 }}>{sub}</span>
           <span style={{ fontSize: 11, color: p.accent, fontWeight: 600 }}>View →</span>
         </div>
