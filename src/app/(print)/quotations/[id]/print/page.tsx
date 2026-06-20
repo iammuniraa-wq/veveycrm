@@ -1,10 +1,11 @@
 import { notFound } from "next/navigation";
 import { getQuote } from "@/lib/data";
+import { getTenant } from "@/lib/tenant";
 import QuotePrint from "@/components/QuotePrint";
 
 export default async function QuotePrintPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const data = await getQuote(id);
+  const [data, tenant] = await Promise.all([getQuote(id), getTenant()]);
   if (!data) notFound();
 
   const { quote, account, contact, site, lines, revisions } = data;
@@ -16,6 +17,7 @@ export default async function QuotePrintPage({ params }: { params: Promise<{ id:
       site={site}
       lines={lines}
       revisions={revisions}
+      companyInfo={tenant?.company_info ?? {}}
     />
   );
 }

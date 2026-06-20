@@ -1,6 +1,7 @@
 "use client";
 
 import type { Quote, QuoteLine, QuoteRevision, Account, Contact, Site } from "@/lib/types";
+import type { CompanyInfo } from "@/lib/tenant";
 import { COMPANY } from "@/lib/constants";
 
 const STATUS_LABEL: Record<Quote["status"], string> = {
@@ -14,6 +15,7 @@ type Props = {
   site: Site | null;
   lines: QuoteLine[];
   revisions: QuoteRevision[];
+  companyInfo?: CompanyInfo;
 };
 
 const inr = (n: number) => "₹" + n.toLocaleString("en-IN", { maximumFractionDigits: 0 });
@@ -24,7 +26,25 @@ const fmtDate = (s: string) =>
 // Brand palette used inline so print colours are always exact.
 const brand = { dark: "#152233", blue: "#378ADD", amber: "#F6B23C", line: "#d0d7e0", bg2: "#f4f6f9" };
 
-export default function QuotePrint({ quote, account, contact, site, lines, revisions }: Props) {
+export default function QuotePrint({ quote, account, contact, site, lines, revisions, companyInfo = {} }: Props) {
+  // Merge tenant overrides on top of system defaults
+  const co = {
+    tagline:          companyInfo.tagline          ?? COMPANY.tagline,
+    undertaking:      companyInfo.undertaking      ?? COMPANY.undertaking,
+    address:          companyInfo.address          ?? COMPANY.address,
+    phone_dir_tech:   companyInfo.phone_dir_tech   ?? COMPANY.phone_dir_tech,
+    phone_commercial: companyInfo.phone_commercial ?? COMPANY.phone_commercial,
+    phone_work:       companyInfo.phone_work       ?? COMPANY.phone_work,
+    landline:         companyInfo.landline         ?? COMPANY.landline,
+    email:            companyInfo.email            ?? COMPANY.email,
+    email2:           companyInfo.email2           ?? COMPANY.email2,
+    web:              companyInfo.web              ?? COMPANY.web,
+    gstin:            companyInfo.gstin            ?? COMPANY.gstin,
+    iso:              companyInfo.iso              ?? COMPANY.iso,
+    partners:         companyInfo.partners         ?? COMPANY.partners,
+    footer_tagline:   companyInfo.footer_tagline   ?? COMPANY.footer_tagline,
+  };
+
   const subtotal = lines.reduce((s, l) => s + l.amount, 0);
   const gst = Math.round(subtotal * 0.18);
   const grandTotal = subtotal + gst;
@@ -79,12 +99,13 @@ export default function QuotePrint({ quote, account, contact, site, lines, revis
       {/* ── A4 Document ─────────────────────────────────────── */}
       <div className="doc">
 
-        {/* Header — Vikas Pioneers letterhead */}
+        {/* Header — letterhead */}
         <div style={{ background: brand.dark, padding: "20px 28px 16px" }}>
-          {/* Top row: logo + company identity | quotation title */}
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 16 }}>
-            <div style={{ display: "flex", alignItems: "flex-start", gap: 14 }}>
-              {/* VP circular logo */}
+          {/* Top row: logo + identity (left) | quotation title + partners (right) */}
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 20 }}>
+
+            {/* Left: logo + company name + tagline + undertaking */}
+            <div style={{ display: "flex", alignItems: "flex-start", gap: 14, flex: 1 }}>
               <svg width="54" height="54" viewBox="0 0 100 100" style={{ flexShrink: 0, marginTop: 2 }}>
                 <circle cx="50" cy="50" r="50" fill="#E65C00" />
                 <circle cx="50" cy="50" r="43" fill="none" stroke="#FFB347" strokeWidth="2.5" />
@@ -92,39 +113,41 @@ export default function QuotePrint({ quote, account, contact, site, lines, revis
               </svg>
               <div>
                 <div style={{ color: "#fff", fontWeight: 800, fontSize: 16, letterSpacing: 0.6, textTransform: "uppercase" }}>{COMPANY.name}</div>
-                <div style={{ color: "#FFB347", fontSize: 11.5, fontWeight: 600, marginTop: 3, letterSpacing: 0.3 }}>{COMPANY.tagline}</div>
+                <div style={{ color: "#FFB347", fontSize: 11.5, fontWeight: 600, marginTop: 3 }}>{co.tagline}</div>
                 <div style={{ color: "#8aa0b8", fontSize: 10, marginTop: 5, lineHeight: 1.55 }}>
-                  We undertake: {COMPANY.undertaking}
+                  We undertake: {co.undertaking}
                 </div>
               </div>
             </div>
+
+            {/* Right: Quotation title + ref + partners */}
             <div style={{ textAlign: "right", flexShrink: 0 }}>
-              <div style={{ color: "#fff", fontSize: 26, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase" }}>Quotation</div>
-              <div style={{ color: brand.amber, fontSize: 14, fontWeight: 600, marginTop: 4, fontFamily: "monospace" }}>{quote.ref}</div>
-              <div style={{ display: "inline-block", background: brand.amber, color: brand.dark, fontSize: 11, fontWeight: 700, padding: "2px 10px", borderRadius: 4, marginTop: 6 }}>
+              <div style={{ color: "#fff", fontSize: 24, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase" }}>Quotation</div>
+              <div style={{ color: brand.amber, fontSize: 13, fontWeight: 600, marginTop: 3, fontFamily: "monospace" }}>{quote.ref}</div>
+              <div style={{ display: "inline-block", background: brand.amber, color: brand.dark, fontSize: 11, fontWeight: 700, padding: "2px 10px", borderRadius: 4, marginTop: 5 }}>
                 Rev. {quote.revision}
               </div>
+              {co.partners && (
+                <div style={{ marginTop: 10, fontSize: 9.5, color: "#7a9ab8", lineHeight: 1.6 }}>
+                  <div style={{ color: "#FFB347", fontWeight: 600, marginBottom: 2 }}>Authorised Channel Partner</div>
+                  {co.partners}
+                </div>
+              )}
             </div>
           </div>
 
           {/* Divider */}
           <div style={{ borderTop: "1px solid rgba(255,255,255,.15)", margin: "14px 0 10px" }} />
 
-          {/* Contact strip */}
+          {/* Contact grid */}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "3px 24px", fontSize: 10.5, color: "#8aa0b8", lineHeight: 1.75 }}>
-            <span>📍 {COMPANY.address}</span>
-            <span>✉ {COMPANY.email} · {COMPANY.email2}</span>
-            <span>📞 Dir/Tech: {COMPANY.phone_dir_tech} · Commercial: {COMPANY.phone_commercial}</span>
-            <span>🌐 {COMPANY.web} · ☎ {COMPANY.landline}</span>
-            <span style={{ color: "#FFB347" }}>GSTIN: {COMPANY.gstin}</span>
-            <span style={{ color: "#FFB347" }}>{COMPANY.iso} Certified</span>
+            <span>📍 {co.address}</span>
+            <span>✉ {co.email}{co.email2 ? ` · ${co.email2}` : ""}</span>
+            <span>📞 Dir/Tech: {co.phone_dir_tech} · Commercial: {co.phone_commercial}</span>
+            <span>🌐 {co.web}{co.landline ? ` · ☎ ${co.landline}` : ""}</span>
+            <span style={{ color: "#FFB347" }}>GSTIN: {co.gstin}</span>
+            {co.iso && <span style={{ color: "#FFB347" }}>{co.iso} Certified</span>}
           </div>
-        </div>
-
-        {/* Partners strip */}
-        <div style={{ background: "#f0f4f8", borderBottom: `1px solid ${brand.line}`, padding: "7px 28px", display: "flex", alignItems: "center", gap: 8, fontSize: 10.5, color: "#4a6278" }}>
-          <span style={{ fontWeight: 700, color: "#152233", marginRight: 4, flexShrink: 0 }}>Authorised Channel Partner:</span>
-          <span>{COMPANY.partners}</span>
         </div>
 
         {/* Meta row */}
@@ -272,11 +295,11 @@ export default function QuotePrint({ quote, account, contact, site, lines, revis
         {/* Footer */}
         <div style={{ background: brand.dark, borderTop: `2px solid #E65C00`, padding: "10px 28px" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 10.5 }}>
-            <span style={{ color: "#FFB347", fontStyle: "italic", fontWeight: 500 }}>{COMPANY.footer_tagline}</span>
+            <span style={{ color: "#FFB347", fontStyle: "italic", fontWeight: 500 }}>{co.footer_tagline}</span>
             <span style={{ color: "#8aa0b8" }}>{quote.ref} · Rev. {quote.revision} · {fmtDate(new Date().toISOString())}</span>
           </div>
           <div style={{ color: "#5a7494", fontSize: 10, marginTop: 4, textAlign: "center" }}>
-            {COMPANY.name} · GSTIN: {COMPANY.gstin} · {COMPANY.web}
+            {COMPANY.name} · GSTIN: {co.gstin} · {co.web}
           </div>
         </div>
 

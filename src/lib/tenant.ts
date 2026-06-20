@@ -11,6 +11,23 @@ export type TenantFeatures = {
   db_export: boolean;
 };
 
+export type CompanyInfo = {
+  tagline?: string;
+  undertaking?: string;
+  address?: string;
+  phone_dir_tech?: string;
+  phone_commercial?: string;
+  phone_work?: string;
+  landline?: string;
+  email?: string;
+  email2?: string;
+  web?: string;
+  gstin?: string;
+  iso?: string;
+  partners?: string;
+  footer_tagline?: string;
+};
+
 export type Tenant = {
   id: string;
   slug: string;
@@ -20,6 +37,7 @@ export type Tenant = {
   status: "active" | "suspended" | "trial";
   plan: "free" | "pro" | "enterprise";
   features: TenantFeatures;
+  company_info: CompanyInfo;
 };
 
 /** Load the current user's tenant (anon client — respects RLS). */
@@ -30,7 +48,7 @@ export async function getTenant(): Promise<Tenant | null> {
 
   const { data } = await supabase
     .from("tenants")
-    .select("id, slug, name, logo_url, accent_color, status, plan, features")
+    .select("id, slug, name, logo_url, accent_color, status, plan, features, company_info")
     .single();
 
   return (data as Tenant) ?? null;
@@ -40,7 +58,7 @@ export async function getTenant(): Promise<Tenant | null> {
 export async function adminListTenants(): Promise<Tenant[]> {
   const { data } = await createAdminSupabase()
     .from("tenants")
-    .select("id, slug, name, logo_url, accent_color, status, plan, features, created_at")
+    .select("id, slug, name, logo_url, accent_color, status, plan, features, company_info, created_at")
     .order("created_at", { ascending: false });
   return (data as Tenant[]) ?? [];
 }
@@ -48,7 +66,7 @@ export async function adminListTenants(): Promise<Tenant[]> {
 /** Admin: update tenant features / status / plan. */
 export async function adminUpdateTenant(
   id: string,
-  patch: Partial<Pick<Tenant, "status" | "plan" | "features" | "name" | "logo_url" | "accent_color">>
+  patch: Partial<Pick<Tenant, "status" | "plan" | "features" | "name" | "logo_url" | "accent_color" | "company_info">>
 ) {
   return createAdminSupabase().from("tenants").update(patch).eq("id", id);
 }

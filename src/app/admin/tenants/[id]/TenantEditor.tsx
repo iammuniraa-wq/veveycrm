@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import type { Tenant, TenantFeatures } from "@/lib/tenant";
+import type { Tenant, TenantFeatures, CompanyInfo } from "@/lib/tenant";
 import { c } from "@/lib/theme";
 
 type Props = {
@@ -38,8 +38,14 @@ export default function TenantEditor({ tenant, users }: Props) {
   const [status, setStatus]           = useState(tenant.status);
   const [plan, setPlan]               = useState(tenant.plan);
   const [features, setFeatures]       = useState<TenantFeatures>({ ...tenant.features });
+  const [info, setInfo]               = useState<CompanyInfo>({ ...(tenant.company_info ?? {}) });
   const [saved, setSaved]             = useState(false);
   const [error, setError]             = useState("");
+
+  function setInfoField(key: keyof CompanyInfo, val: string) {
+    setInfo((prev) => ({ ...prev, [key]: val }));
+    setSaved(false);
+  }
 
   function toggleFeature(key: keyof TenantFeatures) {
     setFeatures((prev) => ({ ...prev, [key]: !prev[key] }));
@@ -53,7 +59,7 @@ export default function TenantEditor({ tenant, users }: Props) {
       const res = await fetch(`/api/admin/tenants/${tenant.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, slug, accent_color: accentColor, logo_url: logoUrl || null, status, plan, features }),
+        body: JSON.stringify({ name, slug, accent_color: accentColor, logo_url: logoUrl || null, status, plan, features, company_info: info }),
       });
       if (res.ok) {
         setSaved(true);
@@ -103,6 +109,42 @@ export default function TenantEditor({ tenant, users }: Props) {
               <input style={{ ...inputStyle, flex: 1 }} value={accentColor} onChange={(e) => setAccentColor(e.target.value)} />
             </div>
           </div>
+        </div>
+      </section>
+
+      {/* Company Info */}
+      <section style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12, padding: 20, marginBottom: 16 }}>
+        <h2 style={{ margin: "0 0 4px", fontSize: 14, fontWeight: 600, color: "#374151" }}>Company Info</h2>
+        <p style={{ margin: "0 0 14px", fontSize: 12, color: "#6b7280" }}>
+          Shown in the quotation PDF header. Leave blank to use the system default.
+        </p>
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          {([
+            { key: "tagline",          label: "Tagline",                     placeholder: "Professional in Motor Rewindings" },
+            { key: "undertaking",      label: "Services (undertaking line)",  placeholder: "Rewinding of LT / HT Large Motors…" },
+            { key: "address",          label: "Address",                      placeholder: "Plot No: N3-N4/1, Industrial Estate…" },
+            { key: "phone_dir_tech",   label: "Phone — Dir / Tech",           placeholder: "9342681227 / 9538884600" },
+            { key: "phone_commercial", label: "Phone — Commercial",           placeholder: "9538884603" },
+            { key: "phone_work",       label: "Phone — Work",                 placeholder: "9538884602" },
+            { key: "landline",         label: "Landline",                     placeholder: "08394-231687" },
+            { key: "email",            label: "Email (primary)",              placeholder: "vikaspioneers@gmail.com" },
+            { key: "email2",           label: "Email (secondary)",            placeholder: "vew@vikaspioneers.com" },
+            { key: "web",              label: "Website",                      placeholder: "www.vikaspioneers.com" },
+            { key: "gstin",            label: "GSTIN",                        placeholder: "29AHHPG0831F1ZN" },
+            { key: "iso",              label: "Certification",                placeholder: "ISO 9001:2015" },
+            { key: "partners",         label: "Channel partners (comma/dot separated)", placeholder: "ABB · WEG · SIEMENS · Kirloskar · Jyoti Ltd. · Marathon" },
+            { key: "footer_tagline",   label: "Footer tagline",               placeholder: "Assuring our best services as always!" },
+          ] as { key: keyof CompanyInfo; label: string; placeholder: string }[]).map(({ key, label, placeholder }) => (
+            <div key={key}>
+              <label style={{ fontSize: 12, color: "#6b7280", display: "block", marginBottom: 3 }}>{label}</label>
+              <input
+                style={inputStyle}
+                value={info[key] ?? ""}
+                placeholder={placeholder}
+                onChange={(e) => setInfoField(key, e.target.value)}
+              />
+            </div>
+          ))}
         </div>
       </section>
 
