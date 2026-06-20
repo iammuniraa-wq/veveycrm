@@ -11,6 +11,19 @@ import Pill from "@/components/Pill";
 import { ROUTES } from "@/lib/constants";
 import type { Technician, VisitLog } from "@/lib/types";
 
+// Config button is rendered separately — avoids making this whole page a client component
+function ConfigButton({ id }: { id: string }) {
+  return (
+    <Link href={ROUTES.technicianConfig(id)} style={{
+      display: "inline-flex", alignItems: "center", gap: 6,
+      padding: "7px 14px", borderRadius: 8, fontSize: 13, fontWeight: 600,
+      background: "#1c2733", color: "#e2e7ee", textDecoration: "none",
+    }}>
+      ⚙ Edit profile
+    </Link>
+  );
+}
+
 const STATUS_TONE: Record<Technician["status"], PillarKey> = {
   active: "green", on_leave: "amber", inactive: "red",
 };
@@ -197,7 +210,11 @@ export default async function TechnicianDetailPage({
         </Link>
       </div>
 
-      <PageHeader title={tech.name} subtitle={`Field team · ${tech.base_location ?? "—"}`} />
+      <PageHeader
+        title={tech.name}
+        subtitle={`Field team · ${tech.base_location ?? "—"}`}
+        action={<ConfigButton id={id} />}
+      />
 
       {/* Status + contacts row */}
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 14, alignItems: "center" }}>

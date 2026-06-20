@@ -22,6 +22,7 @@ export const ROUTES = {
   dispatch: "/dispatch",
   technicians: "/technicians",
   technician: (id: string) => `/technicians/${id}`,
+  technicianConfig: (id: string) => `/technicians/${id}/config`,
   accounts: "/accounts",
   account: (id: string) => `/accounts/${id}`,
   contacts: "/contacts",
