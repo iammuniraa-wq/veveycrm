@@ -42,7 +42,20 @@ export default async function AccountsPage({
       <PageHeader
         title="Accounts"
         subtitle={`${rows.length} accounts · the hub everything points to`}
-        action={<ViewToggle />}
+        action={
+          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            <Link
+              href={ROUTES.accountNew}
+              style={{
+                padding: "7px 14px", borderRadius: 8, fontSize: 12.5, fontWeight: 600,
+                background: c.accent, color: "#fff", textDecoration: "none",
+              }}
+            >
+              + New Account
+            </Link>
+            <ViewToggle />
+          </div>
+        }
       />
 
       {isCard ? (

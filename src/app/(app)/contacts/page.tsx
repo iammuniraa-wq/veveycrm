@@ -33,7 +33,20 @@ export default async function ContactsPage({
       <PageHeader
         title="Contacts"
         subtitle={`${rows.length} people across all accounts`}
-        action={<ViewToggle />}
+        action={
+          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            <Link
+              href={ROUTES.contactNew}
+              style={{
+                padding: "7px 14px", borderRadius: 8, fontSize: 12.5, fontWeight: 600,
+                background: c.accent, color: "#fff", textDecoration: "none",
+              }}
+            >
+              + New Contact
+            </Link>
+            <ViewToggle />
+          </div>
+        }
       />
 
       {isCard ? (

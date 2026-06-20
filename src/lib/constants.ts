@@ -25,7 +25,9 @@ export const ROUTES = {
   technicianConfig: (id: string) => `/technicians/${id}/config`,
   accounts: "/accounts",
   account: (id: string) => `/accounts/${id}`,
+  accountNew: "/accounts/new",
   contacts: "/contacts",
+  contactNew: "/contacts/new",
   assets: "/assets",
   invoices: "/invoices",
   case: (id: string) => `/cases/${id}`,
@@ -98,7 +100,7 @@ export const NAV: NavGroup[] = [
     group: "CONFIGURATION",
     items: [
       { label: "Pricing",   href: ROUTES.configPricing,   icon: "₹", pillar: "green" },
-      { label: "Templates", href: ROUTES.configTemplates,  icon: "📄", pillar: "green" },
+      { label: "Settings",  href: ROUTES.settings,        icon: "⚙", pillar: "green" },
     ],
   },
 ];
