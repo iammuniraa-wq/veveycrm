@@ -340,16 +340,24 @@ export default function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
         borderBottom: "1px solid rgba(255,255,255,.08)",
         marginBottom: 12,
       }}>
-        <Logo size={34} />
+        {tenant?.logo_url ? (
+          <img
+            src={tenant.logo_url}
+            alt={tenant.name}
+            style={{ width: 34, height: 34, borderRadius: 8, objectFit: "contain", flexShrink: 0 }}
+          />
+        ) : (
+          <Logo size={34} />
+        )}
         <div style={{ minWidth: 0 }}>
           <div style={{ fontWeight: 600, color: "#fff", fontSize: 14 }}>
-            Vevey<span style={{ color: "#7fb4ec" }}>CRM</span>
+            {tenant?.name ?? <span>Vevey<span style={{ color: "#7fb4ec" }}>CRM</span></span>}
           </div>
           <div style={{
             fontSize: 11, color: "#8aa0b8",
             overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
           }}>
-            {tenant?.name ?? settings.workspaceName}
+            {tenant ? "workspace" : settings.workspaceName}
           </div>
         </div>
       </div>

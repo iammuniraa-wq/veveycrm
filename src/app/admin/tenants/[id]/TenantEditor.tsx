@@ -187,6 +187,40 @@ export default function TenantEditor({ tenant, users }: Props) {
         </section>
       )}
 
+      {/* Export */}
+      <section style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12, padding: 20, marginBottom: 16 }}>
+        <h2 style={{ margin: "0 0 6px", fontSize: 14, fontWeight: 600, color: "#374151" }}>Data export</h2>
+        <p style={{ margin: "0 0 14px", fontSize: 12, color: "#6b7280" }}>
+          Download all tenant data across every table. Use for support, migration, or backup.
+        </p>
+        <div style={{ display: "flex", gap: 8 }}>
+          <a
+            href={`/api/admin/tenants/${tenant.id}/export?format=json`}
+            download
+            style={{
+              height: 36, padding: "0 16px", display: "inline-flex", alignItems: "center",
+              background: "#f1f5f9", color: "#374151",
+              border: "1px solid #e2e8f0", borderRadius: 8,
+              textDecoration: "none", fontSize: 12, fontWeight: 500, gap: 6,
+            }}
+          >
+            ⬇ JSON
+          </a>
+          <a
+            href={`/api/admin/tenants/${tenant.id}/export?format=csv`}
+            download
+            style={{
+              height: 36, padding: "0 16px", display: "inline-flex", alignItems: "center",
+              background: "#f1f5f9", color: "#374151",
+              border: "1px solid #e2e8f0", borderRadius: 8,
+              textDecoration: "none", fontSize: 12, fontWeight: 500, gap: 6,
+            }}
+          >
+            ⬇ CSV
+          </a>
+        </div>
+      </section>
+
       {/* Save */}
       <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
         <button
