@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { listAccounts, ACCOUNT_TYPE_LABEL } from "@/lib/data";
+import { ACCOUNT_TYPE_LABEL } from "@/lib/data";
+import { listAccountsLive } from "@/lib/data/live";
 import type { Account } from "@/lib/types";
 import { c, pillar } from "@/lib/theme";
 import { cardStyle } from "@/components/Shell";
@@ -35,7 +36,7 @@ export default async function AccountsPage({
 }) {
   const { view } = await searchParams;
   const isCard = view !== "list";
-  const rows = await listAccounts();
+  const rows = await listAccountsLive();
 
   return (
     <>

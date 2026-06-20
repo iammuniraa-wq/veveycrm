@@ -71,6 +71,75 @@ export type DispatchRow = {
   case_ref: string | null;
 };
 
+export type AccountSummary = {
+  account: Account;
+  referredBy: Account | null;
+  counts: {
+    contacts: number;
+    assets: number;
+    contracts: number;
+    quotes: number;
+    workOrders: number;
+    invoices: number;
+  };
+};
+
+export async function listAccountsLive(): Promise<AccountSummary[]> {
+  const supabase = await createServerSupabase();
+
+  const { data: accounts } = await supabase
+    .from("accounts")
+    .select("*")
+    .order("name", { ascending: true });
+
+  if (!accounts || accounts.length === 0) return [];
+
+  const ids = accounts.map((a: Account) => a.id);
+  const referredByIds = accounts
+    .map((a: Account) => a.referred_by_account_id)
+    .filter((id: string | null): id is string => Boolean(id));
+
+  const [
+    { data: contacts },
+    { data: assets },
+    { data: contracts },
+    { data: quotes },
+    { data: workOrders },
+    { data: invoices },
+    { data: referredByAccounts },
+  ] = await Promise.all([
+    supabase.from("contacts").select("id, account_id").in("account_id", ids),
+    supabase.from("assets").select("id, account_id").in("account_id", ids),
+    supabase.from("contracts").select("id, account_id").in("account_id", ids),
+    supabase.from("quotes").select("id, account_id").in("account_id", ids),
+    supabase.from("work_orders").select("id, account_id").in("account_id", ids),
+    supabase.from("invoices").select("id, account_id").in("account_id", ids),
+    referredByIds.length > 0
+      ? supabase.from("accounts").select("id, name").in("id", referredByIds)
+      : Promise.resolve({ data: [] }),
+  ]);
+
+  const refMap = new Map((referredByAccounts ?? []).map((a) => [a.id, a as Account]));
+
+  const count = (rows: { account_id: string }[] | null, id: string) =>
+    (rows ?? []).filter((r) => r.account_id === id).length;
+
+  return (accounts as Account[]).map((account) => ({
+    account,
+    referredBy: account.referred_by_account_id
+      ? (refMap.get(account.referred_by_account_id) ?? null) as Account | null
+      : null,
+    counts: {
+      contacts:   count(contacts   as { account_id: string }[], account.id),
+      assets:     count(assets     as { account_id: string }[], account.id),
+      contracts:  count(contracts  as { account_id: string }[], account.id),
+      quotes:     count(quotes     as { account_id: string }[], account.id),
+      workOrders: count(workOrders as { account_id: string }[], account.id),
+      invoices:   count(invoices   as { account_id: string }[], account.id),
+    },
+  }));
+}
+
 export async function getAccountHubLive(id: string) {
   const supabase = await createServerSupabase();
 
