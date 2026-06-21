@@ -41,6 +41,18 @@ export default async function TechniciansPage() {
       <PageHeader
         title="Technicians"
         subtitle={`Field team · ${activeCt} active${onLeaveCt > 0 ? ` · ${onLeaveCt} on leave` : ""}`}
+        action={
+          <Link
+            href={ROUTES.technicianNew}
+            style={{
+              padding: "7px 14px", borderRadius: 8, fontSize: 12.5, fontWeight: 600,
+              background: c.accent, color: "#fff", textDecoration: "none",
+              whiteSpace: "nowrap",
+            }}
+          >
+            + New Technician
+          </Link>
+        }
       />
 
       {/* Team capacity strip */}

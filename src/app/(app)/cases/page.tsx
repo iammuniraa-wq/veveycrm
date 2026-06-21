@@ -57,7 +57,21 @@ export default async function CasesPage({
       <PageHeader
         title="Cases"
         subtitle="Service · All active and historical service cases"
-        action={<ViewToggle />}
+        action={
+          <>
+            <Link
+              href={ROUTES.caseNew}
+              style={{
+                padding: "7px 14px", borderRadius: 8, fontSize: 12.5, fontWeight: 600,
+                background: c.accent, color: "#fff", textDecoration: "none",
+                whiteSpace: "nowrap",
+              }}
+            >
+              + New Case
+            </Link>
+            <ViewToggle />
+          </>
+        }
       />
 
       {/* KPI strip */}

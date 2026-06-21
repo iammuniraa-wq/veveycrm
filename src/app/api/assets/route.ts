@@ -1,6 +1,30 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { requireTenantUser } from "@/lib/supabase-server";
 
+export async function GET(request: NextRequest) {
+  let supabase, tenantId;
+  try {
+    ({ supabase, tenantId } = await requireTenantUser());
+  } catch (e: unknown) {
+    const err = e as { status: number; message: string };
+    return NextResponse.json({ error: err.message }, { status: err.status });
+  }
+
+  const accountId = request.nextUrl.searchParams.get("account_id");
+  let query = supabase
+    .from("assets")
+    .select("id, name")
+    .eq("tenant_id", tenantId)
+    .eq("is_loaner", false)
+    .order("name", { ascending: true });
+
+  if (accountId) query = query.eq("account_id", accountId);
+
+  const { data, error } = await query;
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  return NextResponse.json(data ?? []);
+}
+
 export async function POST(request: NextRequest) {
   let supabase, tenantId;
   try {
