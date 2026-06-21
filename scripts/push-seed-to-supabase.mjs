@@ -45,7 +45,7 @@ async function getTenantId() {
 
 async function upsert(table, rows) {
   if (!rows.length) return;
-  const { error } = await sb.from(table).upsert(rows, { onConflict: "id", ignoreDuplicates: true });
+  const { error } = await sb.from(table).upsert(rows, { onConflict: "id", ignoreDuplicates: false });
   if (error) console.error(`  ✗ ${table}:`, error.message);
   else console.log(`  ✓ ${table}: ${rows.length} rows`);
 }
@@ -161,6 +161,100 @@ async function main() {
   await upsert("invoices", T([
     { id: ID.inv_sahyadri, account_id: ID.acc_sahyadri, ref: "INV-2026-0211", work_order_id: ID.wo_sahyadri, status: "sent",  total: 0,     issued_at: "2026-06-13T00:00:00" },
     { id: ID.inv_krishna,  account_id: ID.acc_krishna,  ref: "INV-2026-0212", work_order_id: ID.wo_krishna,  status: "draft", total: 86500, issued_at: null },
+  ]));
+
+  // ── Sites ─────────────────────────────────────────────────────────────────────
+  await upsert("sites", T([
+    { id: ID.site_krishna_1,  account_id: ID.acc_krishna,  label: "Spinning Unit", address: "Plot 14, Industrial Area, Hosapete" },
+    { id: ID.site_sahyadri_1, account_id: ID.acc_sahyadri, label: "Main Block",    address: "Vidyanagar, Hubli" },
+    { id: ID.site_bharat_1,   account_id: ID.acc_bharat,   label: "Forge Shop B",  address: "MIDC Mundhwa, Pune" },
+    { id: ID.site_hpsteel_1,  account_id: ID.acc_hpsteel,  label: "Rolling Mill",  address: "Toranagallu Rd, Hosapete" },
+  ]));
+
+  // ── Technician leaves ─────────────────────────────────────────────────────────
+  await upsert("technician_leaves", T([
+    { id: ID.lv_anil_vacation,    technician_id: ID.tech_anil,   from_date: "2026-06-16", to_date: "2026-06-23", reason: "vacation", notes: "Annual family vacation — pre-approved." },
+    { id: ID.lv_ramesh_training,  technician_id: ID.tech_ramesh, from_date: "2026-06-26", to_date: "2026-06-27", reason: "training", notes: "Refresher course — HV safety (KSEB, Hubli)." },
+  ]));
+
+  // ── Visit logs ────────────────────────────────────────────────────────────────
+  await upsert("visit_logs", T([
+    {
+      id: ID.vl_sahyadri_jun12, work_order_id: ID.wo_sahyadri, technician_id: ID.tech_suresh,
+      account_id: ID.acc_sahyadri, visit_date: "2026-06-12",
+      travel_start_time: "07:45", travel_distance_km: 62, arrived_time: "09:10",
+      work_start_time: "09:20", break_start_time: "13:00", break_end_time: "13:45", work_end_time: "16:30",
+      return_start_time: "16:45", return_end_time: "18:15",
+      work_done: "Transformer oil dielectric strength test completed — 58 kV (limit 40 kV, pass). DGA sample analysed on-site: H2 < 50 ppm, C2H2 = 0 (no arcing). Visual inspection of 6 bushings — cleaned. Radiator fins checked, no leaks. Protection relay trip test — responded at 105% rated current.",
+      parts_used: null,
+      customer_feedback: "Very professional — Suresh explained all readings clearly. Happy with the certificate provided.",
+      next_action: "Next AMC visit due Dec 2026. Recommend thermography scan before monsoon.",
+      needs_escalation: false, customer_acknowledged: true, status: "completed",
+    },
+    {
+      id: ID.vl_krishna_jun18, work_order_id: ID.wo_krishna, technician_id: ID.tech_ramesh,
+      account_id: ID.acc_krishna, visit_date: "2026-06-18",
+      travel_start_time: "08:30", travel_distance_km: 8, arrived_time: "08:45",
+      work_start_time: "09:00", break_start_time: "13:00", break_end_time: "13:30", work_end_time: null,
+      return_start_time: null, return_end_time: null,
+      work_done: "Stator stripping and cleaning completed. Old windings removed and slot insulation replaced. New Class F winding in progress — 40% complete as of EOD.",
+      parts_used: "HT insulation paper (12 sheets), slot liner material, Class F varnish (1L)",
+      customer_feedback: null,
+      next_action: "Continue winding tomorrow. Varnish and oven bake scheduled Jun 22. Test bed booking confirmed for Jun 24.",
+      needs_escalation: false, customer_acknowledged: false, status: "in_progress",
+    },
+  ]));
+
+  // ── Activities ────────────────────────────────────────────────────────────────
+  await upsert("activities", T([
+    { id: ID.act_1, account_id: ID.acc_krishna,  pillar: "marketing", text: "Enquiry received — ring-frame motor burnt",          at: "2026-06-10T09:20:00" },
+    { id: ID.act_2, account_id: ID.acc_krishna,  pillar: "sales",     text: "Quote QT-2026-0148 sent (₹86,500) — approved",       at: "2026-06-11T16:05:00" },
+    { id: ID.act_3, account_id: ID.acc_krishna,  pillar: "field",     text: "WO-2026-0301 assigned to Ramesh — rewind in progress",at: "2026-06-18T10:00:00" },
+    { id: ID.act_4, account_id: ID.acc_sahyadri, pillar: "service",   text: "AMC oil-test job opened under Crompton contract",     at: "2026-06-02T11:30:00" },
+    { id: ID.act_5, account_id: ID.acc_sahyadri, pillar: "field",     text: "WO-2026-0298 completed by Suresh — oil within limits",at: "2026-06-12T15:40:00" },
+    { id: ID.act_6, account_id: ID.acc_sahyadri, pillar: "finance",   text: "Invoice INV-2026-0211 raised to Crompton (AMC)",      at: "2026-06-13T09:10:00" },
+    { id: ID.act_7, account_id: ID.acc_bharat,   pillar: "marketing", text: "Referral from Marathon — hammer motor bearings",      at: "2026-06-16T13:00:00" },
+  ]));
+
+  // ── Quote revisions ───────────────────────────────────────────────────────────
+  await upsert("quote_revisions", T([
+    { id: ID.qr_k1, quote_id: ID.qt_krishna, rev: 1, date: "2026-06-11", description: "Initial quotation issued. Transport cost estimated at ₹12,000." },
+    { id: ID.qr_k2, quote_id: ID.qt_krishna, rev: 2, date: "2026-06-13", description: "Bearing upgraded to SKF/FAG premium. Transport revised to ₹15,000. Copper rate note added." },
+    { id: ID.qr_h1, quote_id: ID.qt_hpsteel, rev: 1, date: "2026-06-15", description: "Initial quotation issued." },
+    { id: ID.qr_b1, quote_id: ID.qt_bharat,  rev: 1, date: "2026-06-17", description: "Initial draft prepared after site inspection." },
+  ]));
+
+  // ── Case photos ───────────────────────────────────────────────────────────────
+  await upsert("case_photos", T([
+    { id: ID.ph_k_i1, case_id: ID.case_krishna, stage: "intake",     caption: "Gate receipt — motor on trolley, nameplate visible",            taken_at: "2026-06-10T08:35:00" },
+    { id: ID.ph_k_i2, case_id: ID.case_krishna, stage: "intake",     caption: "Burnt terminal box — visible carbon deposits on leads",          taken_at: "2026-06-10T08:37:00" },
+    { id: ID.ph_k_i3, case_id: ID.case_krishna, stage: "intake",     caption: "DE bearing end — grease discolouration noted",                   taken_at: "2026-06-10T08:39:00" },
+    { id: ID.ph_k_s1, case_id: ID.case_krishna, stage: "inspection", caption: "Stator after stripping — Phase U winding burnt, carbon on slots", taken_at: "2026-06-11T10:20:00" },
+    { id: ID.ph_k_s2, case_id: ID.case_krishna, stage: "inspection", caption: "Rotor surface — no mechanical damage, shaft runout within tolerance", taken_at: "2026-06-11T10:28:00" },
+    { id: ID.ph_k_s3, case_id: ID.case_krishna, stage: "inspection", caption: "DE bearing removed — inner race pitting confirmed",               taken_at: "2026-06-11T10:35:00" },
+    { id: ID.ph_h_i1, case_id: ID.case_hpsteel, stage: "intake",     caption: "Motor at gate — transport cradle intact, nameplate photographed", taken_at: "2026-06-14T10:20:00" },
+    { id: ID.ph_h_i2, case_id: ID.case_hpsteel, stage: "intake",     caption: "DE bearing housing — visible oil leak at labyrinth seal",         taken_at: "2026-06-14T10:24:00" },
+    { id: ID.ph_h_s1, case_id: ID.case_hpsteel, stage: "inspection", caption: "DE bearing removed — heavy pitting, cage deformed",               taken_at: "2026-06-15T09:10:00" },
+    { id: ID.ph_h_s2, case_id: ID.case_hpsteel, stage: "inspection", caption: "Rotor — dynamic balance check, unbalance reading 12 g·mm (limit: 4)", taken_at: "2026-06-15T11:00:00" },
+    { id: ID.ph_h_s3, case_id: ID.case_hpsteel, stage: "inspection", caption: "Winding IR — Phase R: 42 MΩ, Phase Y: 38 MΩ, Phase B: 41 MΩ (pass)", taken_at: "2026-06-15T14:15:00" },
+    { id: ID.ph_b_i1, case_id: ID.case_bharat,  stage: "intake",     caption: "Motor received from Bharat Forge Pune — logistics partner delivery", taken_at: "2026-06-17T14:05:00" },
+    { id: ID.ph_b_i2, case_id: ID.case_bharat,  stage: "intake",     caption: "DE end-shield — grease leakage and discolouration around labyrinth seal", taken_at: "2026-06-17T14:10:00" },
+  ]));
+
+  // ── Inspection reports ────────────────────────────────────────────────────────
+  await upsert("inspection_reports", T([
+    {
+      id: ID.ir_krishna, case_id: ID.case_krishna,
+      findings: "Phase U stator winding is completely burnt due to sustained single-phasing. Insulation degraded to Class E (original Class F). DE bearing (6315) shows inner-race pitting; NDE bearing serviceable. Rotor in good condition — shaft runout 0.02 mm (within tolerance).",
+      recommendations: "Full stator rewind in Class F insulation. Replace DE and NDE bearings (SKF/FAG). Re-varnish and oven-bake. Full no-load and load test before dispatch. Install phase-failure relay.",
+      estimated_cost: 86500, status: "approved", sent_at: "2026-06-11T17:00:00", approved_at: "2026-06-13T09:30:00",
+    },
+    {
+      id: ID.ir_hpsteel, case_id: ID.case_hpsteel,
+      findings: "DE bearing (NU 2320) heavily pitted with cage deformation. NDE bearing (6320) shows early-stage wear. Dynamic balance shows 12 g·mm unbalance (IS 11723 G2.5 limit: 4 g·mm). Winding IR satisfactory (38–42 MΩ). Labyrinth seal worn — oil leakage evident.",
+      recommendations: "Replace DE and NDE bearings. Dynamic rotor balancing to IS 11723 G2.5. Replace labyrinth seals. HV withstand test (1500V / 1 min) before reassembly.",
+      estimated_cost: 142000, status: "sent", sent_at: "2026-06-15T16:30:00", approved_at: null,
+    },
   ]));
 
   // ── Pricing items ─────────────────────────────────────────────────────────────
