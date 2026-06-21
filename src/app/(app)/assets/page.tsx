@@ -1,10 +1,10 @@
 ﻿import Link from "next/link";
-import { listAssets } from "@/lib/data";
 import { c, pillar, type PillarKey } from "@/lib/theme";
 import { cardStyle } from "@/components/Shell";
 import PageHeader from "@/components/PageHeader";
 import Pill from "@/components/Pill";
 import { ROUTES } from "@/lib/constants";
+import { listAssetsLive } from "@/lib/data/live";
 
 const KIND_ICON: Record<string, string> = {
   motor: "⚡", transformer: "⚙", pump: "💧", generator: "🔋", panel: "🖥",
@@ -17,7 +17,7 @@ const KIND_TONE: Record<string, PillarKey> = {
 };
 
 export default async function AssetsPage() {
-  const { customerAssets, loanerStock } = await listAssets();
+  const { customerAssets, loanerStock } = await listAssetsLive();
 
   const available = loanerStock.filter((r) => r.asset.loaner_status === "available").length;
   const onLoan    = loanerStock.filter((r) => r.asset.loaner_status === "on_loan").length;
@@ -27,6 +27,17 @@ export default async function AssetsPage() {
       <PageHeader
         title="Assets"
         subtitle={`${customerAssets.length} customer assets · ${loanerStock.length} loaner units (${available} available)`}
+        action={
+          <Link
+            href={ROUTES.assetNew}
+            style={{
+              padding: "7px 14px", borderRadius: 8, fontSize: 12.5, fontWeight: 600,
+              background: c.accent, color: "#fff", textDecoration: "none",
+            }}
+          >
+            + New Asset
+          </Link>
+        }
       />
 
       {/* Loaner Stock */}

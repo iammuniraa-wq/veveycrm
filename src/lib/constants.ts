@@ -29,6 +29,7 @@ export const ROUTES = {
   contacts: "/contacts",
   contactNew: "/contacts/new",
   assets: "/assets",
+  assetNew: "/assets/new",
   invoices: "/invoices",
   case: (id: string) => `/cases/${id}`,
   settings: "/settings",

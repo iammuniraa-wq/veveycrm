@@ -84,6 +84,59 @@ export type AccountSummary = {
   };
 };
 
+export type AssetRow = {
+  asset: Asset;
+  account: Account | null;
+  openCaseCount: number;
+  loanedToCase: ServiceCase | null;
+  loanedToAccount: Account | null;
+};
+
+export async function listAssetsLive(): Promise<{ customerAssets: AssetRow[]; loanerStock: AssetRow[] }> {
+  const supabase = await createServerSupabase();
+
+  const [{ data: assets }, { data: cases }] = await Promise.all([
+    supabase.from("assets").select("*").order("name", { ascending: true }),
+    supabase.from("service_cases").select("id, ref, asset_id, loaner_asset_id, account_id, status"),
+  ]);
+
+  const allAssets = (assets ?? []) as Asset[];
+  const allCases = (cases ?? []) as ServiceCase[];
+
+  const accountIds = [...new Set(allAssets.map((a) => a.account_id).filter(Boolean) as string[])];
+  const { data: accounts } = accountIds.length
+    ? await supabase.from("accounts").select("*").in("id", accountIds)
+    : { data: [] };
+
+  const accountById = new Map((accounts ?? []).map((a) => [a.id, a as Account]));
+
+  const activeCasesByAsset = new Map<string, number>();
+  const loanCaseByAsset = new Map<string, ServiceCase>();
+  allCases.forEach((sc) => {
+    if (sc.asset_id && !["closed", "buyback", "scrapped"].includes(sc.status)) {
+      activeCasesByAsset.set(sc.asset_id, (activeCasesByAsset.get(sc.asset_id) ?? 0) + 1);
+    }
+    if (sc.loaner_asset_id) loanCaseByAsset.set(sc.loaner_asset_id, sc);
+  });
+
+  const toRow = (asset: Asset): AssetRow => {
+    const loanedCase = asset.is_loaner ? (loanCaseByAsset.get(asset.id) ?? null) : null;
+    const loanedAccount = loanedCase ? (accountById.get(loanedCase.account_id ?? "") ?? null) : null;
+    return {
+      asset,
+      account: asset.account_id ? (accountById.get(asset.account_id) ?? null) : null,
+      openCaseCount: activeCasesByAsset.get(asset.id) ?? 0,
+      loanedToCase: loanedCase,
+      loanedToAccount: loanedAccount,
+    };
+  };
+
+  return {
+    customerAssets: allAssets.filter((a) => !a.is_loaner).map(toRow),
+    loanerStock:    allAssets.filter((a) =>  a.is_loaner).map(toRow),
+  };
+}
+
 export async function listAccountsLive(): Promise<AccountSummary[]> {
   const supabase = await createServerSupabase();
 
