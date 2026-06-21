@@ -48,6 +48,14 @@ const KIND_TONE: Record<Asset["kind"], PillarKey> = {
 
 type LineRow = { id: string; description: string; qty: string; rate: string };
 
+const ASSET_KINDS: { value: Asset["kind"]; label: string }[] = [
+  { value: "motor",       label: "Motor" },
+  { value: "transformer", label: "Transformer" },
+  { value: "pump",        label: "Pump" },
+  { value: "generator",   label: "Generator" },
+  { value: "panel",       label: "Panel" },
+];
+
 type Props = {
   accounts: Account[];
   contacts: Contact[];
@@ -56,9 +64,12 @@ type Props = {
   textFragments: TextFragment[];
 };
 
-export default function QuoteForm({ accounts, contacts, assets, pricingItems, textFragments }: Props) {
+export default function QuoteForm({ accounts, contacts, assets: initialAssets, pricingItems, textFragments }: Props) {
   const today        = new Date().toISOString().slice(0, 10);
   const defaultValid = new Date(Date.now() + 30 * 86400_000).toISOString().slice(0, 10);
+
+  // Local assets — starts from server-loaded list, new ones appended without page reload
+  const [localAssets, setLocalAssets] = useState<Asset[]>(initialAssets);
 
   // Account & contact
   const [accountId, setAccountId] = useState("");
@@ -89,6 +100,35 @@ export default function QuoteForm({ accounts, contacts, assets, pricingItems, te
   // Notes & terms
   const [notes, setNotes] = useState("");
   const [terms, setTerms] = useState("");
+
+  // Create-asset drawer (opened from within the form — no page navigation)
+  const [createAssetOpen, setCreateAssetOpen] = useState(false);
+  const [newAsset, setNewAsset] = useState({ name: "", kind: "motor" as Asset["kind"], make: "", model: "", serial: "", rating: "", notes: "" });
+  const [createAssetPending, startCreateAsset] = useTransition();
+  const [createAssetError, setCreateAssetError] = useState("");
+  const setNA = (k: keyof typeof newAsset) =>
+    (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
+      setNewAsset((p) => ({ ...p, [k]: e.target.value }));
+
+  function handleCreateAsset(e: React.FormEvent) {
+    e.preventDefault();
+    setCreateAssetError("");
+    startCreateAsset(async () => {
+      const res = await fetch("/api/assets", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...newAsset, account_id: accountId || null }),
+      });
+      const json = await res.json();
+      if (!res.ok) { setCreateAssetError(json.error ?? "Failed to create asset"); return; }
+      // Append to local list and auto-select it
+      const created: Asset = { id: json.id, account_id: accountId || null, ...newAsset, is_loaner: false, loaner_status: null };
+      setLocalAssets((p) => [...p, created]);
+      setSelectedAssetIds((p) => [...p, json.id]);
+      setCreateAssetOpen(false);
+      setNewAsset({ name: "", kind: "motor", make: "", model: "", serial: "", rating: "", notes: "" });
+    });
+  }
 
   // UI panels
   const [catalogOpen, setCatalogOpen]     = useState(false);
@@ -121,9 +161,9 @@ export default function QuoteForm({ accounts, contacts, assets, pricingItems, te
 
   const accountContacts = contacts.filter((ct) => ct.account_id === accountId);
   const selectedAccount = accounts.find((a) => a.id === accountId);
-  const accountAssets   = assets.filter((a) => a.account_id === accountId);
+  const accountAssets   = localAssets.filter((a) => a.account_id === accountId);
   const selectedAssets  = selectedAssetIds
-    .map((id) => assets.find((a) => a.id === id))
+    .map((id) => localAssets.find((a) => a.id === id))
     .filter((a): a is Asset => !!a);
 
   const parsedLines = lines.map((l) => {
@@ -312,12 +352,12 @@ export default function QuoteForm({ accounts, contacts, assets, pricingItems, te
               </div>
               <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 8 }}>
                 {accountId && accountAssets.length === 0 && (
-                  <Link
-                    href={ROUTES.assets}
-                    style={{ fontSize: 11.5, color: c.accent, textDecoration: "none", fontWeight: 500 }}
+                  <button
+                    onClick={() => setCreateAssetOpen(true)}
+                    style={{ fontSize: 11.5, color: c.accent, background: "none", border: "none", cursor: "pointer", fontWeight: 500, padding: 0 }}
                   >
-                    + Create asset first →
-                  </Link>
+                    + Create asset first
+                  </button>
                 )}
                 <button
                   onClick={() => setAssetPickerOpen(true)}
@@ -344,9 +384,12 @@ export default function QuoteForm({ accounts, contacts, assets, pricingItems, te
             {accountId && accountAssets.length === 0 && (
               <div style={{ padding: "18px 0", textAlign: "center" }}>
                 <div style={{ fontSize: 13, color: c.muted, marginBottom: 8 }}>No assets registered for this account yet.</div>
-                <Link href={ROUTES.assets} style={{ fontSize: 13, color: c.accent, fontWeight: 600, textDecoration: "none" }}>
-                  Go to Assets and create one →
-                </Link>
+                <button
+                  onClick={() => setCreateAssetOpen(true)}
+                  style={{ fontSize: 13, color: c.accent, fontWeight: 600, background: "none", border: "none", cursor: "pointer", padding: 0 }}
+                >
+                  + Create one now
+                </button>
               </div>
             )}
 
@@ -673,12 +716,12 @@ export default function QuoteForm({ accounts, contacts, assets, pricingItems, te
                 {selectedAssetIds.length} selected
               </span>
               <div style={{ display: "flex", gap: 8 }}>
-                <Link
-                  href={ROUTES.assets}
-                  style={{ fontSize: 12, color: c.accent, textDecoration: "none", padding: "7px 14px", border: `1px solid ${c.accent}`, borderRadius: 7, fontWeight: 500 }}
+                <button
+                  onClick={() => { setAssetPickerOpen(false); setCreateAssetOpen(true); }}
+                  style={{ fontSize: 12, color: c.accent, background: "none", padding: "7px 14px", border: `1px solid ${c.accent}`, borderRadius: 7, fontWeight: 500, cursor: "pointer" }}
                 >
                   + Create new asset
-                </Link>
+                </button>
                 <button
                   onClick={() => setAssetPickerOpen(false)}
                   style={{ fontSize: 13, fontWeight: 600, color: "#fff", background: c.accent, border: "none", borderRadius: 7, padding: "7px 18px", cursor: "pointer" }}
@@ -731,6 +774,82 @@ export default function QuoteForm({ accounts, contacts, assets, pricingItems, te
                 );
               })}
             </div>
+          </div>
+        </>
+      )}
+
+      {/* ── Create asset drawer ─────────────────────────────────────────── */}
+      {createAssetOpen && (
+        <>
+          <div onClick={() => setCreateAssetOpen(false)} style={{ position: "fixed", inset: 0, background: "rgba(14,26,40,.45)", zIndex: 998 }} />
+          <div style={{ position: "fixed", top: 0, right: 0, bottom: 0, width: 440, background: c.panel, zIndex: 999, display: "flex", flexDirection: "column", boxShadow: "-6px 0 32px rgba(0,0,0,.18)" }}>
+            <div style={{ padding: "16px 20px", borderBottom: `1px solid ${c.line}`, display: "flex", alignItems: "center" }}>
+              <div>
+                <div style={{ fontWeight: 700, fontSize: 14, color: c.ink }}>New asset</div>
+                <div style={{ fontSize: 11.5, color: c.muted, marginTop: 2 }}>
+                  {selectedAccount ? `Linked to ${selectedAccount.name}` : "No account selected"}
+                </div>
+              </div>
+              <button onClick={() => setCreateAssetOpen(false)} style={{ marginLeft: "auto", background: "none", border: "none", fontSize: 20, color: c.muted, cursor: "pointer", lineHeight: 1 }}>×</button>
+            </div>
+
+            <form onSubmit={handleCreateAsset} style={{ flex: 1, overflowY: "auto", padding: "18px 20px", display: "flex", flexDirection: "column", gap: 14 }}>
+              <div>
+                <label style={lbl}>Asset name *</label>
+                <input style={inp} value={newAsset.name} onChange={setNA("name")} required placeholder="e.g. Ring-frame drive motor" />
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                <div>
+                  <label style={lbl}>Kind *</label>
+                  <select style={sel} value={newAsset.kind} onChange={setNA("kind")} required>
+                    {ASSET_KINDS.map((k) => <option key={k.value} value={k.value}>{k.label}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label style={lbl}>Make / brand</label>
+                  <input style={inp} value={newAsset.make} onChange={setNA("make")} placeholder="e.g. Crompton Greaves" />
+                </div>
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                <div>
+                  <label style={lbl}>Model</label>
+                  <input style={inp} value={newAsset.model} onChange={setNA("model")} placeholder="e.g. ND315S-2" />
+                </div>
+                <div>
+                  <label style={lbl}>Serial no.</label>
+                  <input style={inp} value={newAsset.serial} onChange={setNA("serial")} placeholder="e.g. CG-75-2291" />
+                </div>
+              </div>
+              <div>
+                <label style={lbl}>Rating / specs</label>
+                <input style={inp} value={newAsset.rating} onChange={setNA("rating")} placeholder="e.g. 75 kW · 415V · 1480 rpm" />
+              </div>
+              <div>
+                <label style={lbl}>Notes / history</label>
+                <textarea style={{ ...inp, resize: "vertical", minHeight: 64 }} value={newAsset.notes} onChange={setNA("notes")} placeholder="e.g. Rewound once — June 2024." />
+              </div>
+
+              {createAssetError && (
+                <div style={{ fontSize: 12, color: "#dc2626", background: "#fef2f2", borderRadius: 7, padding: "8px 12px" }}>{createAssetError}</div>
+              )}
+
+              <div style={{ display: "flex", gap: 8, paddingTop: 4 }}>
+                <button
+                  type="submit"
+                  disabled={createAssetPending}
+                  style={{ flex: 1, padding: "10px 0", borderRadius: 8, border: "none", background: c.accent, color: "#fff", fontWeight: 700, fontSize: 13, cursor: createAssetPending ? "wait" : "pointer" }}
+                >
+                  {createAssetPending ? "Creating…" : "Create & link asset"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCreateAssetOpen(false)}
+                  style={{ padding: "10px 16px", borderRadius: 8, border: `1px solid ${c.line}`, background: "none", color: c.muted, fontSize: 13, cursor: "pointer" }}
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
           </div>
         </>
       )}
