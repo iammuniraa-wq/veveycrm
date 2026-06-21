@@ -97,12 +97,6 @@ export const NAV: NavGroup[] = [
       { label: "Analytics", href: ROUTES.reports,   icon: "◫", pillar: "purple" },
     ],
   },
-  {
-    group: "CONFIGURATION",
-    items: [
-      { label: "Pricing",   href: ROUTES.configPricing,   icon: "₹", pillar: "green" },
-    ],
-  },
 ];
 
 export const MOBILE_BREAKPOINT = 780;
