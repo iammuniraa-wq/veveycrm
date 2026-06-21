@@ -7,6 +7,8 @@ import { c, g, pillar } from "@/lib/theme";
 import { useSettings, ACCENT_PRESETS } from "@/lib/settings";
 import Logo from "./Logo";
 import Sidebar from "./Sidebar";
+import { TabsProvider } from "@/lib/tabs-context";
+import TabBar from "./TabBar";
 
 // ── Mobile: top bar + slide-in drawer ────────────────────────────────────────
 
@@ -170,22 +172,29 @@ export default function Shell({ children }: { children: React.ReactNode }) {
 
   if (mobile) {
     return (
-      <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
-        <MobileTopBar />
-        <main style={{ flex: 1, padding: 12, overflowX: "auto", minWidth: 0 }}>
-          {children}
-        </main>
-      </div>
+      <TabsProvider>
+        <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
+          <MobileTopBar />
+          <main style={{ flex: 1, padding: 12, overflowX: "auto", minWidth: 0 }}>
+            {children}
+          </main>
+        </div>
+      </TabsProvider>
     );
   }
 
   return (
-    <div style={{ display: "flex", minHeight: "100vh" }}>
-      <Sidebar />
-      <main style={{ flex: 1, padding: "20px 24px", overflowX: "hidden", maxWidth: 1100 }}>
-        {children}
-      </main>
-    </div>
+    <TabsProvider>
+      <div style={{ display: "flex", minHeight: "100vh" }}>
+        <Sidebar />
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0 }}>
+          <TabBar />
+          <main style={{ flex: 1, padding: "20px 24px", overflowX: "hidden", maxWidth: 1100 }}>
+            {children}
+          </main>
+        </div>
+      </div>
+    </TabsProvider>
   );
 }
 
