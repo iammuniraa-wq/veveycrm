@@ -1,0 +1,220 @@
+/**
+ * One-shot script: push all seed data into Supabase under the Vikas tenant.
+ * Run with: node scripts/push-seed-to-supabase.mjs
+ *
+ * Safe to re-run — uses upsert with ignoreDuplicates so existing rows are skipped.
+ * The script generates stable UUIDs from the seed string IDs so re-runs produce
+ * identical rows.
+ */
+
+import { createClient } from "@supabase/supabase-js";
+import { createHash } from "crypto";
+
+const SUPABASE_URL = "https://paajhifadwyoplemssgx.supabase.co";
+const SERVICE_ROLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBhYWpoaWZhZHd5b3BsZW1zc2d4Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MTc5ODk0NCwiZXhwIjoyMDk3Mzc0OTQ0fQ.Agn1vLj_jgcfcT_YybnLrLouFkHWP_Sgn6PJOE2NTSU";
+const ADMIN_EMAIL = "sap.rashid@gmail.com";
+
+const sb = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
+
+/** Derive a stable UUID v4 from a seed string */
+function seedUUID(key) {
+  const hash = createHash("sha256").update("veveycrm-seed:" + key).digest("hex");
+  return [
+    hash.slice(0, 8),
+    hash.slice(8, 12),
+    "4" + hash.slice(13, 16),          // version 4
+    ((parseInt(hash[16], 16) & 0x3) | 0x8).toString(16) + hash.slice(17, 20), // variant
+    hash.slice(20, 32),
+  ].join("-");
+}
+
+// Build the ID map once — every seed string key maps to a stable UUID
+const ID = new Proxy({}, {
+  get(_, key) { return seedUUID(String(key)); },
+});
+
+async function getTenantId() {
+  const { data: users } = await sb.auth.admin.listUsers();
+  const user = users?.users?.find((u) => u.email === ADMIN_EMAIL);
+  if (!user) throw new Error(`User ${ADMIN_EMAIL} not found in Supabase auth`);
+  const { data: tu } = await sb.from("tenant_users").select("tenant_id").eq("user_id", user.id).maybeSingle();
+  if (!tu?.tenant_id) throw new Error(`No tenant_users row for ${ADMIN_EMAIL} — run the SQL from the setup instructions first`);
+  console.log("Tenant ID:", tu.tenant_id);
+  return tu.tenant_id;
+}
+
+async function upsert(table, rows) {
+  if (!rows.length) return;
+  const { error } = await sb.from(table).upsert(rows, { onConflict: "id", ignoreDuplicates: true });
+  if (error) console.error(`  ✗ ${table}:`, error.message);
+  else console.log(`  ✓ ${table}: ${rows.length} rows`);
+}
+
+async function main() {
+  const tid = await getTenantId();
+  const T = (rows) => rows.map((r) => ({ ...r, tenant_id: tid }));
+
+  // ── Accounts ─────────────────────────────────────────────────────────────────
+  await upsert("accounts", T([
+    { id: ID.acc_crompton,   name: "Crompton Greaves",             type: "oem",          city: "Mumbai",    phone: "+91 22 5550 1100", email: "service@cromptongreaves.com", referred_by_account_id: null,                  created_at: "2026-01-12" },
+    { id: ID.acc_marathon,   name: "Marathon Electric",            type: "oem",          city: "Faridabad", phone: "+91 129 555 2200", email: "amc@marathon-electric.in",   referred_by_account_id: null,                  created_at: "2026-02-03" },
+    { id: ID.acc_rotomotive, name: "Rotomotive Power Drives",      type: "oem",          city: "Anand",     phone: "+91 269 255 3300", email: "support@rotomotive.com",     referred_by_account_id: null,                  created_at: "2026-02-20" },
+    { id: ID.acc_krishna,    name: "Krishna Textiles",             type: "direct",       city: "Hosapete",  phone: "+91 8394 220 145", email: "works@krishnatextiles.in",   referred_by_account_id: null,                  created_at: "2026-03-01" },
+    { id: ID.acc_hpsteel,    name: "Hosapete Steel",               type: "direct",       city: "Hosapete",  phone: "+91 8394 220 700", email: "maint@hosapetesteel.com",    referred_by_account_id: null,                  created_at: "2026-03-18" },
+    { id: ID.acc_sahyadri,   name: "Sahyadri Hospital",            type: "end_customer", city: "Hubli",     phone: "+91 836 555 8080", email: "facilities@sahyadri.org",    referred_by_account_id: ID.acc_crompton,       created_at: "2026-04-02" },
+    { id: ID.acc_bharat,     name: "Bharat Forge",                 type: "end_customer", city: "Pune",      phone: "+91 20 5555 9090", email: "plant@bharatforge.com",      referred_by_account_id: ID.acc_marathon,       created_at: "2026-04-15" },
+    { id: ID.acc_tata,       name: "Tata Motors",                  type: "end_customer", city: "Dharwad",   phone: "+91 836 555 7070", email: "upkeep@tatamotors.com",      referred_by_account_id: ID.acc_rotomotive,     created_at: "2026-05-06" },
+    { id: ID.acc_rail,       name: "South Western Railway Stores", type: "prospect",     city: "Hubballi",  phone: "+91 836 555 4455", email: "stores@swr.in",              referred_by_account_id: null,                  created_at: "2026-06-01" },
+    { id: ID.acc_sugar,      name: "Renuka Sugar Works",           type: "prospect",     city: "Belgaum",   phone: "+91 831 555 7788", email: "maint@renuka.co.in",         referred_by_account_id: null,                  created_at: "2026-06-10" },
+  ]));
+
+  // ── Contacts ──────────────────────────────────────────────────────────────────
+  await upsert("contacts", T([
+    { id: ID.con_krishna_1,  account_id: ID.acc_krishna,  name: "Mahesh Rao",     role: "Maintenance Head",    phone: "+91 98860 11223", email: "mahesh@krishnatextiles.in" },
+    { id: ID.con_sahyadri_1, account_id: ID.acc_sahyadri, name: "Dr. Nalini",     role: "Facilities Lead",     phone: "+91 99000 44556", email: "nalini@sahyadri.org" },
+    { id: ID.con_bharat_1,   account_id: ID.acc_bharat,   name: "Sunil Kulkarni", role: "Plant Engineer",      phone: "+91 90110 77889", email: "sunil@bharatforge.com" },
+    { id: ID.con_crompton_1, account_id: ID.acc_crompton, name: "Anita Desai",    role: "Service Manager",     phone: "+91 98200 33445", email: "anita@cromptongreaves.com" },
+    { id: ID.con_rail_1,     account_id: ID.acc_rail,     name: "K. Venkatesh",   role: "Chief Engineer",      phone: "+91 98441 22334", email: "venkatesh@swr.in" },
+    { id: ID.con_sugar_1,    account_id: ID.acc_sugar,    name: "Priya Nair",     role: "Maintenance Manager", phone: "+91 94491 55667", email: "priya@renuka.co.in" },
+  ]));
+
+  // ── Assets ────────────────────────────────────────────────────────────────────
+  await upsert("assets", T([
+    { id: ID.ast_krishna_m1,  account_id: ID.acc_krishna,  kind: "motor",       name: "Ring-frame drive motor",          make: "Crompton Greaves",  model: "ND315S-2",          rating: "75 kW · 415V · 1480 rpm",  serial: "CG-75-2291",  notes: "Rewound once — June 2024. Bearings last replaced Jan 2025.", is_loaner: false, loaner_status: null },
+    { id: ID.ast_sahyadri_t1, account_id: ID.acc_sahyadri, kind: "transformer", name: "Distribution transformer",        make: "Voltamp",           model: "ONAN-500-11/0.433", rating: "500 kVA · 11kV/433V",      serial: "TX-500-0148", notes: "Oil tested under AMC — last test May 2026. BDV: 58 kV.",   is_loaner: false, loaner_status: null },
+    { id: ID.ast_bharat_m1,   account_id: ID.acc_bharat,   kind: "motor",       name: "Hammer drive motor",              make: "Marathon Electric", model: "MG280MC-6",         rating: "160 kW · 415V · 990 rpm",  serial: "MR-160-7741", notes: "Bearings replaced March 2025. Vibration within spec.",       is_loaner: false, loaner_status: null },
+    { id: ID.ast_hpsteel_m1,  account_id: ID.acc_hpsteel,  kind: "motor",       name: "Rolling mill motor",              make: "Rotomotive",        model: "GG355M-8",          rating: "250 kW · 690V · 740 rpm",  serial: "HP-250-3320", notes: "Covered under AMC. Noisy bearing reported June 2026.",       is_loaner: false, loaner_status: null },
+    { id: ID.ast_tata_p1,     account_id: ID.acc_tata,     kind: "pump",        name: "Coolant pump",                    make: "Kirloskar",         model: "KDS-316",           rating: "37 kW · 415V · 2950 rpm",  serial: "RM-37-5582",  notes: null,                                                        is_loaner: false, loaner_status: null },
+    { id: ID.lnr_motor_45k,   account_id: null,            kind: "motor",       name: "Loaner — 45 kW standard motor",   make: "Crompton Greaves",  model: "ND250M-2",          rating: "45 kW · 415V · 1480 rpm",  serial: "VP-LNR-001",  notes: null,                                                        is_loaner: true,  loaner_status: "on_loan" },
+    { id: ID.lnr_motor_22k,   account_id: null,            kind: "motor",       name: "Loaner — 22 kW general purpose",  make: "Marathon Electric", model: "MG200LA-2",         rating: "22 kW · 415V · 1480 rpm",  serial: "VP-LNR-002",  notes: null,                                                        is_loaner: true,  loaner_status: "available" },
+    { id: ID.lnr_pump_37k,    account_id: null,            kind: "pump",        name: "Loaner — 37 kW centrifugal pump", make: "Kirloskar",         model: "KDS-280",           rating: "37 kW · 415V · 2950 rpm",  serial: "VP-LNR-003",  notes: null,                                                        is_loaner: true,  loaner_status: "available" },
+  ]));
+
+  // ── Technicians ───────────────────────────────────────────────────────────────
+  await upsert("technicians", T([
+    { id: ID.tech_ramesh, name: "Ramesh Kumar",  phone: "+91 94482 11223", email: "ramesh.k@vikaspioneers.com",  skills: "HT motor rewinding, stator repair, varnish treatment, test bed operation",              status: "active",   base_location: "Hosapete", max_visits_per_day: 2 },
+    { id: ID.tech_suresh, name: "Suresh Naik",   phone: "+91 98802 44556", email: "suresh.n@vikaspioneers.com",  skills: "Transformer oil testing, DGA, bushing inspection, AMC site visits",                    status: "active",   base_location: "Hubli",    max_visits_per_day: 3 },
+    { id: ID.tech_anil,   name: "Anil Hegde",    phone: "+91 97421 77889", email: "anil.h@vikaspioneers.com",   skills: "Pump & generator overhaul, bearing replacement, alignment, vibration analysis",         status: "on_leave", base_location: "Hosapete", max_visits_per_day: 2 },
+    { id: ID.tech_farhan, name: "Farhan Shaikh", phone: "+91 99001 33445", email: "farhan.s@vikaspioneers.com", skills: "LT/HT panel wiring, PLC commissioning, onsite field service, emergency callouts",       status: "active",   base_location: "Hosapete", max_visits_per_day: 4 },
+  ]));
+
+  // ── Contracts ─────────────────────────────────────────────────────────────────
+  await upsert("contracts", T([
+    { id: ID.ctr_crompton, account_id: ID.acc_sahyadri, ref: "AMC-CG-2026-04", holder_account_id: ID.acc_crompton,   status: "active", start_date: "2026-04-01", end_date: "2027-03-31", value: 480000 },
+    { id: ID.ctr_marathon, account_id: ID.acc_bharat,   ref: "AMC-MR-2026-02", holder_account_id: ID.acc_marathon,   status: "active", start_date: "2026-04-01", end_date: "2027-03-31", value: 620000 },
+    { id: ID.ctr_roto,     account_id: ID.acc_tata,     ref: "AMC-RM-2026-05", holder_account_id: ID.acc_rotomotive, status: "active", start_date: "2026-05-01", end_date: "2027-04-30", value: 360000 },
+  ]));
+
+  // ── Leads ─────────────────────────────────────────────────────────────────────
+  await upsert("leads", T([
+    { id: ID.lead_krishna,  account_id: ID.acc_krishna,  title: "Ring-frame motor burnt — rewind enquiry", source: "direct",       status: "quoted",     created_at: "2026-06-10" },
+    { id: ID.lead_hpsteel,  account_id: ID.acc_hpsteel,  title: "Rolling mill motor noisy — inspection",   source: "direct",       status: "inspecting", created_at: "2026-06-14" },
+    { id: ID.lead_sahyadri, account_id: ID.acc_sahyadri, title: "Transformer oil test (AMC due)",          source: "amc",          status: "won",        created_at: "2026-06-02" },
+    { id: ID.lead_bharat,   account_id: ID.acc_bharat,   title: "Hammer motor bearing replacement",        source: "oem_referral", status: "new",        created_at: "2026-06-16" },
+  ]));
+
+  // ── Quotes ────────────────────────────────────────────────────────────────────
+  await upsert("quotes", T([
+    { id: ID.qt_krishna, account_id: ID.acc_krishna, ref: "QT-2026-0148", status: "approved", total: 86500,  created_at: "2026-06-11", valid_until: "2026-07-11", revision: 2, notes: "Price includes pickup and delivery within Hosapete. Payment: 50% advance, balance on delivery." },
+    { id: ID.qt_hpsteel, account_id: ID.acc_hpsteel, ref: "QT-2026-0152", status: "sent",     total: 142000, created_at: "2026-06-15", valid_until: "2026-07-15", revision: 1, notes: "Rotor balancing to IS 11723 G2.5 standard. Payment: 40% advance, 60% against delivery." },
+    { id: ID.qt_bharat,  account_id: ID.acc_bharat,  ref: "QT-2026-0155", status: "draft",    total: 48500,  created_at: "2026-06-17", valid_until: "2026-07-17", revision: 1, notes: null },
+  ]));
+
+  // ── Quote lines ───────────────────────────────────────────────────────────────
+  await upsert("quote_lines", T([
+    { id: ID.ql_k1, quote_id: ID.qt_krishna, description: "Stripping & cleaning of stator windings",          qty: 1,  rate: 8000,  amount: 8000  },
+    { id: ID.ql_k2, quote_id: ID.qt_krishna, description: "HT insulation paper & slot liner material",         qty: 12, rate: 850,   amount: 10200 },
+    { id: ID.ql_k3, quote_id: ID.qt_krishna, description: "Rewinding — 75 kW, 415 V, 1480 rpm, 3-phase",      qty: 1,  rate: 32000, amount: 32000 },
+    { id: ID.ql_k4, quote_id: ID.qt_krishna, description: "Class F varnish treatment & oven baking",           qty: 1,  rate: 6500,  amount: 6500  },
+    { id: ID.ql_k5, quote_id: ID.qt_krishna, description: "Bearing replacement — DE & NDE (SKF/FAG)",          qty: 2,  rate: 4800,  amount: 9600  },
+    { id: ID.ql_k6, quote_id: ID.qt_krishna, description: "No-load & full-load testing, test certificate",     qty: 1,  rate: 5200,  amount: 5200  },
+    { id: ID.ql_k7, quote_id: ID.qt_krishna, description: "Transportation — pickup & delivery, Hosapete",      qty: 1,  rate: 15000, amount: 15000 },
+    { id: ID.ql_h1, quote_id: ID.qt_hpsteel, description: "Disassembly, cleaning & condition inspection",      qty: 1,  rate: 12000, amount: 12000 },
+    { id: ID.ql_h2, quote_id: ID.qt_hpsteel, description: "Complete rewind — 250 kW, 690 V, 740 rpm",         qty: 1,  rate: 75000, amount: 75000 },
+    { id: ID.ql_h3, quote_id: ID.qt_hpsteel, description: "Dynamic rotor balancing to IS 11723 G2.5",         qty: 1,  rate: 18000, amount: 18000 },
+    { id: ID.ql_h4, quote_id: ID.qt_hpsteel, description: "Bearing replacement — 4 sets (Toller/SKF)",        qty: 4,  rate: 5500,  amount: 22000 },
+    { id: ID.ql_h5, quote_id: ID.qt_hpsteel, description: "Enclosure repair, sealing & repainting",           qty: 1,  rate: 8000,  amount: 8000  },
+    { id: ID.ql_h6, quote_id: ID.qt_hpsteel, description: "HV withstand test & insulation resistance cert",   qty: 1,  rate: 7000,  amount: 7000  },
+    { id: ID.ql_b1, quote_id: ID.qt_bharat,  description: "Bearing replacement — DE & NDE, all 4 sets",       qty: 4,  rate: 5200,  amount: 20800 },
+    { id: ID.ql_b2, quote_id: ID.qt_bharat,  description: "Shaft seal & end-shield gasket replacement",       qty: 1,  rate: 4200,  amount: 4200  },
+    { id: ID.ql_b3, quote_id: ID.qt_bharat,  description: "Insulation resistance & vibration check",          qty: 1,  rate: 8500,  amount: 8500  },
+    { id: ID.ql_b4, quote_id: ID.qt_bharat,  description: "Onsite labour — Bharat Forge, Pune (2 days)",      qty: 2,  rate: 7500,  amount: 15000 },
+  ]));
+
+  // ── Service cases (must exist before work orders) ─────────────────────────────
+  await upsert("service_cases", T([
+    { id: ID.case_krishna,        account_id: ID.acc_krishna, ref: "CS-2026-0089",   type: "direct", status: "in_repair",   asset_id: ID.ast_krishna_m1,  equipment_label: "Crompton 75 kW 3-Ph IM · CG-75-2291",      complaint: "Stator winding burnt — complete failure. Motor tripped on OLR.",                                        assigned_to: ID.tech_ramesh, intake_at: "2026-06-10T08:30:00", closed_at: null, quote_id: ID.qt_krishna, contract_id: null,          has_loaner: false, loaner_asset_id: null,           parent_case_id: null,              disposition: "repair", notes: "Customer needs motor back by 25 Jun — spinning line B is down. Priority job." },
+    { id: ID.case_hpsteel,        account_id: ID.acc_hpsteel, ref: "CS-2026-0092",   type: "direct", status: "report_sent", asset_id: ID.ast_hpsteel_m1,  equipment_label: "Marathon 250 kW 3-Ph IM · HP-250-3320",     complaint: "Excessive vibration and noise at full load. Bearing temperature alarm on DE side.",                      assigned_to: ID.tech_suresh, intake_at: "2026-06-14T10:15:00", closed_at: null, quote_id: ID.qt_hpsteel, contract_id: null,          has_loaner: false, loaner_asset_id: null,           parent_case_id: null,              disposition: null,     notes: "HV motor — 690V class. Ensure HV test cert on completion." },
+    { id: ID.case_bharat,         account_id: ID.acc_bharat,  ref: "CS-2026-0095",   type: "amc",    status: "inspection",  asset_id: ID.ast_bharat_m1,   equipment_label: "Marathon 160 kW 3-Ph IM · MR-160-7741",     complaint: "Bearing noise — DE side. Grease leaking from end-shield. Intermittent vibration trip.",                 assigned_to: ID.tech_anil,   intake_at: "2026-06-17T14:00:00", closed_at: null, quote_id: null,           contract_id: ID.ctr_marathon, has_loaner: true,  loaner_asset_id: ID.lnr_motor_45k, parent_case_id: null,              disposition: null,     notes: "AMC case under Marathon contract. Loaner VP-LNR-001 dispatched to Bharat Forge Pune." },
+    { id: ID.case_bharat_winding, account_id: ID.acc_bharat,  ref: "CS-2026-0095-A", type: "amc",    status: "inspection",  asset_id: ID.ast_bharat_m1,   equipment_label: "Marathon 160 kW 3-Ph IM · MR-160-7741",     complaint: "Insulation resistance on Phase B found below threshold (8 MOhm, limit 10 MOhm) during bearing inspection.", assigned_to: ID.tech_ramesh, intake_at: "2026-06-18T09:00:00", closed_at: null, quote_id: null,           contract_id: ID.ctr_marathon, has_loaner: false, loaner_asset_id: null,           parent_case_id: ID.case_bharat, disposition: null,    notes: "Discovered during Phase B IR check. May need partial rewind if further tests confirm degradation." },
+  ]));
+
+  // ── Work orders ───────────────────────────────────────────────────────────────
+  // DB uses auth_kind + auth_id instead of authorized_by JSON
+  await upsert("work_orders", T([
+    { id: ID.wo_krishna,  account_id: ID.acc_krishna,  ref: "WO-2026-0301", case_id: ID.case_krishna, asset_id: ID.ast_krishna_m1,  technician_id: ID.tech_ramesh, auth_kind: "quote",    auth_id: ID.qt_krishna,   status: "in_progress", scheduled_for: "2026-06-18T00:00:00", description: "Full stator rewind — 75 kW, 415V, 1480 rpm, Class F insulation. Replace DE & NDE bearings (SKF/FAG). Varnish treatment and oven bake. No-load and full-load testing.", notes: "Customer spinning line B is down. Priority completion by 25 Jun." },
+    { id: ID.wo_sahyadri, account_id: ID.acc_sahyadri, ref: "WO-2026-0298", case_id: null,            asset_id: ID.ast_sahyadri_t1, technician_id: ID.tech_suresh, auth_kind: "contract", auth_id: ID.ctr_crompton, status: "completed",   scheduled_for: "2026-06-12T00:00:00", description: "AMC routine — transformer oil dielectric strength test, dissolved gas analysis (DGA), and visual inspection of bushings and radiators.", notes: "Oil test results within limits. Certificate issued." },
+    { id: ID.wo_bharat,   account_id: ID.acc_bharat,   ref: "WO-2026-0305", case_id: ID.case_bharat,  asset_id: ID.ast_bharat_m1,   technician_id: ID.tech_anil,   auth_kind: "contract", auth_id: ID.ctr_marathon, status: "scheduled",   scheduled_for: "2026-06-20T00:00:00", description: "Bearing replacement — DE & NDE sets (160 kW, 415V). Replace labyrinth seal and end-shield gaskets. Insulation resistance and vibration check on reassembly.", notes: "Loaner VP-LNR-001 dispatched to Pune site." },
+  ]));
+
+  // ── Invoices ──────────────────────────────────────────────────────────────────
+  await upsert("invoices", T([
+    { id: ID.inv_sahyadri, account_id: ID.acc_sahyadri, ref: "INV-2026-0211", work_order_id: ID.wo_sahyadri, status: "sent",  total: 0,     issued_at: "2026-06-13T00:00:00" },
+    { id: ID.inv_krishna,  account_id: ID.acc_krishna,  ref: "INV-2026-0212", work_order_id: ID.wo_krishna,  status: "draft", total: 86500, issued_at: null },
+  ]));
+
+  // ── Pricing items ─────────────────────────────────────────────────────────────
+  await upsert("pricing_items", T([
+    { id: ID.pr_l1,  category: "labour",    description: "Motor rewinding — up to 30 kW (415V, 3-phase)",                 unit: "per job",     rate: 18000, notes: "Includes stator strip, rewind, varnish, oven bake, no-load test" },
+    { id: ID.pr_l2,  category: "labour",    description: "Motor rewinding — 31-75 kW (415V, 3-phase)",                    unit: "per job",     rate: 32000, notes: "Includes Class F insulation, SKF/FAG bearings optional" },
+    { id: ID.pr_l3,  category: "labour",    description: "Motor rewinding — 76-150 kW (415V, 3-phase)",                   unit: "per job",     rate: 52000, notes: null },
+    { id: ID.pr_l4,  category: "labour",    description: "Motor rewinding — above 150 kW (HT/LT)",                        unit: "per job",     rate: 85000, notes: "Rate subject to coil design complexity" },
+    { id: ID.pr_l5,  category: "labour",    description: "Bearing replacement — DE & NDE set",                             unit: "per set",     rate: 4500,  notes: "Labour only; bearing cost extra" },
+    { id: ID.pr_l6,  category: "labour",    description: "Pump overhaul — mechanical seal, impeller, casing inspection",   unit: "per job",     rate: 14000, notes: null },
+    { id: ID.pr_l7,  category: "labour",    description: "Panel wiring & commissioning",                                    unit: "per job",     rate: 8000,  notes: null },
+    { id: ID.pr_l8,  category: "labour",    description: "Transformer oil replacement & servicing",                         unit: "per job",     rate: 6500,  notes: "Oil cost billed separately" },
+    { id: ID.pr_l9,  category: "labour",    description: "Onsite service visit — half day (up to 4 hours)",                 unit: "per visit",   rate: 4500,  notes: "Within 50 km of Hosapete" },
+    { id: ID.pr_l10, category: "labour",    description: "Onsite service visit — full day (up to 8 hours)",                 unit: "per visit",   rate: 7500,  notes: "Within 50 km of Hosapete" },
+    { id: ID.pr_l11, category: "labour",    description: "Emergency callout — after hours / weekend",                       unit: "per callout", rate: 12000, notes: "Applies outside 9 AM-6 PM Mon-Sat" },
+    { id: ID.pr_l12, category: "labour",    description: "Dynamic rotor balancing — IS 11723 G2.5",                         unit: "per job",     rate: 18000, notes: null },
+    { id: ID.pr_m1,  category: "material",  description: "Copper wire — Class F (IS 13730)",                               unit: "per kg",      rate: 850,   notes: "Rate subject to copper market price" },
+    { id: ID.pr_m2,  category: "material",  description: "HT insulation paper (IS 1576)",                                  unit: "per sheet",   rate: 420,   notes: null },
+    { id: ID.pr_m3,  category: "material",  description: "SKF/FAG bearing — 6315 (DE, standard)",                          unit: "per piece",   rate: 4200,  notes: null },
+    { id: ID.pr_m4,  category: "material",  description: "Toller/SKF bearing — NU 2320 (heavy duty)",                      unit: "per piece",   rate: 5800,  notes: null },
+    { id: ID.pr_m5,  category: "material",  description: "Class F varnish — alkyd resin (IS 1866)",                        unit: "per litre",   rate: 680,   notes: null },
+    { id: ID.pr_m6,  category: "material",  description: "Transformer oil — IS 335 grade",                                 unit: "per litre",   rate: 280,   notes: null },
+    { id: ID.pr_m7,  category: "material",  description: "Labyrinth seal kit (complete)",                                   unit: "per set",     rate: 1200,  notes: null },
+    { id: ID.pr_m8,  category: "material",  description: "Slot liner & wedge material",                                     unit: "per set",     rate: 950,   notes: null },
+    { id: ID.pr_t1,  category: "testing",   description: "No-load & full-load test with certificate (IS 325)",              unit: "per test",    rate: 5200,  notes: "Includes test report, signed certificate" },
+    { id: ID.pr_t2,  category: "testing",   description: "HV withstand test — 1500V / 1 min (IS 2148)",                    unit: "per test",    rate: 3500,  notes: "HV certificate issued on pass" },
+    { id: ID.pr_t3,  category: "testing",   description: "Dissolved Gas Analysis (DGA) — IEC 60599",                       unit: "per sample",  rate: 4800,  notes: null },
+    { id: ID.pr_t4,  category: "testing",   description: "Insulation resistance (Megger) — 500V / 1000V",                   unit: "per test",    rate: 800,   notes: null },
+    { id: ID.pr_t5,  category: "testing",   description: "Vibration analysis & report — ISO 10816",                         unit: "per test",    rate: 3200,  notes: null },
+    { id: ID.pr_t6,  category: "testing",   description: "Thermography scan — Level I report",                              unit: "per scan",    rate: 2800,  notes: null },
+    { id: ID.pr_t7,  category: "testing",   description: "Dielectric strength test (oil) — IS 6792",                        unit: "per test",    rate: 1800,  notes: "Test at 50 kV, pass limit 40 kV" },
+    { id: ID.pr_tr1, category: "transport", description: "Local pickup & delivery — within Hosapete",                       unit: "per trip",    rate: 8000,  notes: "Includes loading/unloading" },
+    { id: ID.pr_tr2, category: "transport", description: "Long-distance transport — per km (one way)",                      unit: "per km",      rate: 45,    notes: "Minimum 100 km billing" },
+    { id: ID.pr_tr3, category: "transport", description: "Crane hire — for heavy motors (>500 kg)",                         unit: "per day",     rate: 6500,  notes: "Half-day minimum billing" },
+  ]));
+
+  // ── Text fragments ─────────────────────────────────────────────────────────────
+  await upsert("text_fragments", T([
+    { id: ID.fr_li1, category: "line_item", label: "Full motor rewind scope",   text: "Full stator rewind in Class F / Class H insulation. Strip and clean stator slots. Replace DE & NDE bearings (SKF/FAG). Varnish treatment and oven bake. No-load and full-load test with certificate." },
+    { id: ID.fr_li2, category: "line_item", label: "Bearing replacement scope", text: "Replace drive-end (DE) and non-drive-end (NDE) bearings (SKF/FAG/Toller). Clean and degrease bearing housings. Apply fresh high-temperature grease. Reassemble, align, and test run." },
+    { id: ID.fr_li3, category: "line_item", label: "AMC site visit scope",      text: "Scheduled AMC preventive maintenance visit. Visual inspection, cleaning, lubrication, insulation resistance check, parameter recording. Service report submitted on completion." },
+    { id: ID.fr_li4, category: "line_item", label: "Transformer oil service",   text: "Drain and replace transformer oil (IS 335 grade). Clean conservator and buchholz relay. Perform dielectric strength test. Top up to rated level. Issue oil test certificate." },
+    { id: ID.fr_li5, category: "line_item", label: "Pump overhaul scope",       text: "Disassemble pump. Replace mechanical seal, impeller wear rings, and shaft sleeve. Inspect casing for cavitation damage. Reassemble and align to motor. Run test and record flow/pressure/power." },
+    { id: ID.fr_n1,  category: "notes",     label: "Copper rate clause",        text: "Note: Quoted price is based on copper at Rs.750/kg. If copper rate exceeds Rs.750/kg at time of rewinding, a material surcharge of Rs.1,500 per kW will apply." },
+    { id: ID.fr_n2,  category: "notes",     label: "Standard warranty",         text: "Warranty: 12 months on rewinding workmanship from date of dispatch. Warranty is void if the motor is operated with a defective overload relay or on unbalanced supply." },
+    { id: ID.fr_n3,  category: "notes",     label: "Transport note",            text: "Transport charges above are for local Hosapete pickup and delivery only. For outstation sites, freight charges will be at actuals by road transport." },
+    { id: ID.fr_n4,  category: "notes",     label: "Loaner motor note",         text: "A loaner motor will be provided during the repair period subject to availability. Loaner unit remains the property of Vikas Pioneers India Pvt Ltd and must be returned on delivery of the repaired unit." },
+    { id: ID.fr_n5,  category: "notes",     label: "Priority job note",         text: "This job has been flagged as PRIORITY by the customer. We will endeavour to complete and dispatch within the agreed timeline." },
+    { id: ID.fr_t1,  category: "terms",     label: "Standard payment terms",    text: "Payment Terms: 50% advance on order confirmation; balance before dispatch. GST @ 18% applicable on all services and materials. No dispatch without clearance of balance." },
+    { id: ID.fr_t2,  category: "terms",     label: "AMC payment terms",         text: "AMC charges are payable quarterly in advance. Failure to pay within 30 days of due date will render the AMC contract void for that quarter. Parts not covered under AMC scope will be charged separately." },
+    { id: ID.fr_t3,  category: "terms",     label: "Standard T&C",             text: "1. Prices are ex-works Hosapete unless stated otherwise.\n2. Quotation valid for 30 days.\n3. All electrical testing per IS/IEC standards.\n4. Vikas Pioneers is not liable for delays due to non-availability of OEM spares.\n5. Disputes subject to Hosapete jurisdiction." },
+  ]));
+
+  console.log("\nDone. All seed data is now in Supabase.");
+}
+
+main().catch((e) => { console.error(e); process.exit(1); });
