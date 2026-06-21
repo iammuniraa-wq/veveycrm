@@ -6,8 +6,8 @@ import { c, pillar, type PillarKey } from "@/lib/theme";
 import { cardStyle } from "@/components/Shell";
 import Pill from "@/components/Pill";
 import { ROUTES } from "@/lib/constants";
-import { QUOTE_STATUS_LABEL } from "@/lib/data";
-import type { QuoteSummary, AnalyticsData } from "@/lib/data";
+import { QUOTE_STATUS_LABEL } from "@/lib/data/labels";
+import type { QuoteSummary, AnalyticsData } from "@/lib/data/labels";
 import type { Quote } from "@/lib/types";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────

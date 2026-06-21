@@ -6,7 +6,7 @@ import { c, pillar, type PillarKey } from "@/lib/theme";
 import { cardStyle } from "@/components/Shell";
 import Pill from "@/components/Pill";
 import { ROUTES } from "@/lib/constants";
-import { ACCOUNT_TYPE_LABEL } from "@/lib/data";
+import { ACCOUNT_TYPE_LABEL } from "@/lib/data/labels";
 import type { Account, Asset, Contact, PricingItem, TextFragment, PricingCategory } from "@/lib/types";
 
 // ── Styles ────────────────────────────────────────────────────────────────────
